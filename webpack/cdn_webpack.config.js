@@ -32,6 +32,6 @@ module.exports = {
 		library: "Sentc",
 		libraryTarget: "umd",
 		clean: true,
-		path: path.resolve(__dirname, "../tests/web_test/web_cdn/dist")
+		path: path.resolve(__dirname, "../dist")
 	}
 };
