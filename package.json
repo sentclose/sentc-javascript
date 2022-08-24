@@ -18,7 +18,14 @@
     "url": "https://github.com/sentclose/sentc/issues"
   },
   "homepage": "https://sentclose.com/",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
+  "files": [
+    "lib/",
+    "dist/",
+    "LICENSE",
+    "CHANGELOG.md",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build",
