@@ -4,7 +4,7 @@
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sentclose/sentc.git"
+    "url": "git+https://gitlab.com/sentclose/sentc/sdk-implementations/sentc-javascript.git"
   },
   "keywords": [
     "end-to-end-encryption",
@@ -12,10 +12,20 @@
     "sentclose",
     "sentc"
   ],
-  "author": "Sentclose <contact@sentclose.com>",
-  "license": "ISC",
+  "author": {
+    "name": "Sentclose",
+    "email": "contact@sentclose.com",
+    "url": "https://sentclose.com/"
+  },
+  "contributors": [
+    {
+      "name": "Jörn Heinemann",
+      "email": "j.heinemann@sentclose.com"
+    }
+  ],
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sentclose/sentc/issues"
+    "url": "https://gitlab.com/sentclose/sentc/sdk-implementations/sentc-javascript/issues"
   },
   "homepage": "https://sentclose.com/",
   "main": "lib/index.js",
