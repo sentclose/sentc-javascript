@@ -29,6 +29,7 @@
   },
   "homepage": "https://sentclose.com/",
   "main": "lib/index.js",
+  "browser": "dist/sentc.min.js",
   "files": [
     "lib/",
     "dist/",
