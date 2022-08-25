@@ -52,6 +52,15 @@ export interface GroupData
 	key_map: Map<string, number>	//save the index of the key to this key id
 }
 
+export interface GroupList
+{
+	group_id: string,
+	time: number,
+	joined_time: number,
+	rank: number,
+	parent?: string
+}
+
 export interface GroupInviteListItem
 {
 	group_id: string,

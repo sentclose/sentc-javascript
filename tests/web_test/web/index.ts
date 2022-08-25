@@ -150,6 +150,14 @@ export async function run()
 		console.log(e);
 	}
 
+	console.log("get groups for user");
+
+	const groups_user_1 = await user.getGroups();
+	const groups_user_2 = await user_2.getGroups();
+
+	console.log("groups user 1", groups_user_1);
+	console.log("groups user 2", groups_user_2);
+
 	console.log("group delete");
 
 	await group.deleteGroup();

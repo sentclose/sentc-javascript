@@ -36,6 +36,13 @@ describe("Group Test", () => {
 		chai.assert.equal(group.data.group_id, group_id);
 	});
 
+	it("should get all groups for the user", async function() {
+		/** @var GroupList[] */
+		const out = await user0.getGroups();
+
+		chai.assert.equal(out.length, 1);
+	});
+
 	it("should not get the group when user is not in the group", async function() {
 		try {
 			await user1.getGroup(group.data.group_id);
