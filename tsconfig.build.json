@@ -1,7 +1,6 @@
 {
 	"extends": "./tsconfig.app.json",
 	"compilerOptions": {
-		"sourceMap": false,
-		"removeComments": true
+		"sourceMap": false
 	}
 }
