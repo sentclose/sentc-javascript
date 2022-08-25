@@ -2,7 +2,8 @@ async function run() {
 	const sentc = window.Sentc.default;
 
 	await sentc.init({
-		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn"
+		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn",
+		base_url: "http://127.0.0.1:3002"
 	});
 
 	console.log("_________________________________");

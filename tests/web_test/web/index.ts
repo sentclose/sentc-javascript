@@ -6,7 +6,8 @@ export async function run()
 	//app sec token: YLPFfqKbFG0qgLpAMxzaavYwO5DK2mTScBK6YAXmo9QOS+MgXKHJXhPVwRq3lLZWaPg=
 
 	await Sentc.init({
-		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn"
+		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn",
+		base_url: "http://127.0.0.1:3002"
 		//wasm_path: "http://localhost:8000/tests/web_test/web/dist/sentc_wasm_bg.wasm"
 	});
 
