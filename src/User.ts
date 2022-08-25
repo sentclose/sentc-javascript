@@ -1,8 +1,8 @@
 import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
-import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData} from "./Enities";
+import {GroupInviteListItem, GroupList, USER_KEY_STORAGE_NAMES, UserData} from "./Enities";
 import {
 	change_password, decode_jwt, delete_user,
-	group_accept_invite, group_create_group,
+	group_accept_invite, group_create_group, group_get_groups_for_user,
 	group_get_invites_for_user,
 	group_join_req, group_prepare_create_group,
 	group_reject_invite, reset_password,
@@ -125,6 +125,24 @@ export class User extends AbstractAsymCrypto
 	}
 
 	//__________________________________________________________________________________________________________________
+
+	public async getGroups(last_fetched_item: GroupList | null = null)
+	{
+		const jwt = await this.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const out: GroupList[] = await group_get_groups_for_user(
+			this.base_url,
+			this.app_token,
+			jwt,
+			last_fetched_time,
+			last_id
+		);
+
+		return out;
+	}
 
 	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
 	{
