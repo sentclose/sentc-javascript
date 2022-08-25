@@ -88,7 +88,7 @@ export class Sentc
 
 		await init(options.wasm_path);	//init wasm
 
-		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
+		const base_url = options?.base_url ?? "https://sentc.sentclose.com";
 
 		let errCallBack: ResCallBack;
 
