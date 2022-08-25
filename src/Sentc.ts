@@ -4,21 +4,22 @@
  */
 
 import init, {
-	register,
 	check_user_identifier_available,
-	prepare_register,
+	done_check_user_identifier_available,
+	done_login,
+	done_register,
+	init_user,
+	InitInput,
 	login,
 	prepare_check_user_identifier_available,
-	done_check_user_identifier_available,
-	done_register,
-	user_fetch_public_key,
-	user_fetch_public_data,
-	user_fetch_verify_key,
-	prepare_login_start,
 	prepare_login,
-	done_login, refresh_jwt,
-	init_user,
-	InitInput
+	prepare_login_start,
+	prepare_register,
+	refresh_jwt,
+	register,
+	user_fetch_public_data,
+	user_fetch_public_key,
+	user_fetch_verify_key
 } from "sentc_wasm";
 import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -77,7 +78,12 @@ export class Sentc
 	public static async init(options: SentcOptions): Promise<User | undefined>
 	{
 		if (this.init_client) {
-			return this.getActualUser(true);
+			try {
+				return await this.getActualUser(true);
+			} catch (e) {
+				//user was not logged in but the client was init
+				return; 
+			}
 		}
 
 		await init(options.wasm_path);	//init wasm

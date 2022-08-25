@@ -109,7 +109,10 @@ export class User extends AbstractAsymCrypto
 	{
 		const storage = await Sentc.getStore();
 
-		await storage.delete(this.userIdentifier);
+		return Promise.all([
+			storage.delete(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier),
+			storage.delete(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier)
+		]);
 	}
 
 	public async deleteUser(password: string)
