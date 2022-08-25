@@ -88,7 +88,7 @@ export class Sentc
 
 		await init(options.wasm_path);	//init wasm
 
-		const base_url = options?.base_url ?? "https://sentc.sentclose.com";
+		const base_url = options?.base_url ?? "https://api.sentc.com";
 
 		let errCallBack: ResCallBack;
 
