@@ -75,6 +75,14 @@ export class Sentc
 		return this.storage;
 	}
 
+	/**
+	 * Initialize the client.
+	 *
+	 * This only works in a browser environment.
+	 * If using ssr, exe init only in the client, not on the server
+	 *
+	 * load the wasm file (from the app options url or the cdn url)
+	 */
 	public static async init(options: SentcOptions): Promise<User | undefined>
 	{
 		if (this.init_client) {
@@ -142,6 +150,13 @@ export class Sentc
 		}
 	}
 
+	/**
+	 * Do a request to the sentc api to check if the user identifier is still available.
+	 *
+	 * true => user identifier is free
+	 *
+	 * @param userIdentifier
+	 */
 	public static checkUserIdentifierAvailable(userIdentifier: string)
 	{
 		if (userIdentifier === "") {
@@ -151,6 +166,13 @@ export class Sentc
 		return check_user_identifier_available(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
 	}
 
+	/**
+	 * Prepare the server input for the sentc api to check if an identifier is available
+	 *
+	 * This function won't do a request
+	 *
+	 * @param userIdentifier
+	 */
 	public static prepareCheckUserIdentifierAvailable(userIdentifier: string)
 	{
 		if (userIdentifier === "") {
@@ -160,6 +182,13 @@ export class Sentc
 		return prepare_check_user_identifier_available(userIdentifier);
 	}
 
+	/**
+	 * Checks the server output after the request.
+	 *
+	 * This is only needed when not using @see checkUserIdentifierAvailable
+	 *
+	 * @param serverOutput
+	 */
 	public static doneCheckUserIdentifierAvailable(serverOutput: string)
 	{
 		return done_check_user_identifier_available(serverOutput);
@@ -304,6 +333,16 @@ export class Sentc
 		return new User(Sentc.options.base_url, Sentc.options.app_token, userData, userIdentifier);
 	}
 
+	/**
+	 * get a new jwt when the old one is expired
+	 *
+	 * The check is done automatically when making a sentc api request
+	 *
+	 * It can be refreshed directly with the sdk, a request to another backend with a cookie or with an own function
+	 *
+	 * @param old_jwt
+	 * @param refresh_token
+	 */
 	public static refreshJwt(old_jwt: string, refresh_token: string)
 	{
 		const options = this.options.refresh;
@@ -395,6 +434,13 @@ export class Sentc
 		return user;
 	}
 
+	/**
+	 * Get any user matched by the user identifier.
+	 *
+	 * The user data is stored in the indexeddb (standard) or in memory
+	 *
+	 * @param userIdentifier
+	 */
 	public static async getUser(userIdentifier: string): Promise<User | false>
 	{
 		const storage = await this.getStore();
@@ -408,6 +454,15 @@ export class Sentc
 		return new User(this.options.base_url, this.options.app_token, user, userIdentifier);
 	}
 
+	/**
+	 * Get from another user the public data.
+	 *
+	 * This is sued for inviting this user in a group or accepting the join request, because the public key is needed
+	 *
+	 * @param base_url
+	 * @param app_token
+	 * @param user_id
+	 */
 	public static async getUserPublicData(base_url: string, app_token: string, user_id: string)
 	{
 		const storage = await this.getStore();
@@ -432,6 +487,13 @@ export class Sentc
 		return fetched_data;
 	}
 
+	/**
+	 * The same as getUserPublicData but only fetched the public key
+	 *
+	 * @param base_url
+	 * @param app_token
+	 * @param user_id
+	 */
 	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
 	{
 		const storage = await this.getStore();
@@ -461,6 +523,13 @@ export class Sentc
 		return returns;
 	}
 
+	/**
+	 * The same as getUserPublicData but only fetched the verify key
+	 *
+	 * @param base_url
+	 * @param app_token
+	 * @param user_id
+	 */
 	public static async getUserVerifyKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
 	{
 		const storage = await this.getStore();
