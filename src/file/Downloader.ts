@@ -49,7 +49,7 @@ export class Downloader
 		this.mutex = new Mutex();
 	}
 
-	constructor(private base_url: string, private app_token: string, private user: User)
+	constructor(private base_url: string, private app_token: string, private user: User, private part_url = "")
 	{
 		//the base url can be different when serving the files from a different storage
 
@@ -89,12 +89,14 @@ export class Downloader
 		const unlock = await Downloader.mutex.lock();
 		const storage = await Downloader.getStorage();
 
+		const part_url_base = (this.part_url === "" || !this.part_url) ? this.base_url : this.part_url;
+
 		for (let i = 0; i < part_list.length; i++) {
 			let part;
 
 			try {
 				// eslint-disable-next-line no-await-in-loop
-				part = await file_download_and_decrypt_file_part(this.base_url, this.app_token, jwt, part_list[i], content_key, verify_key);
+				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, jwt, part_list[i], content_key, verify_key);
 			} catch (e) {
 				// eslint-disable-next-line no-await-in-loop
 				await Downloader.reset();	//remove the downloaded parts from the store
