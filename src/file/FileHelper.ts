@@ -1,9 +1,3 @@
-/**
- * @author Jörn Heinemann <joernheinemann@gmx.de>
- * @since 2021/11/11
- */
-import {AttachmentSessionData} from "../Enities";
-
 export class FileHelper
 {
 	/**
@@ -47,24 +41,5 @@ export class FileHelper
 				reader.readAsArrayBuffer(file);
 			}
 		});
-	}
-
-	public static transferSessionData(sessionData: AttachmentSessionData)
-	{
-		const sessionIds: Map<number, string> = new Map();
-
-		//the backend ordered the session data to the file types
-		//now order to each frontend id the session id
-		for (const typeData of sessionData) {
-			//iterate over the data of each file type
-
-			for (const data of typeData) {
-				//iterate over the actual session data to each file
-
-				sessionIds.set(data.frontendId as unknown as number, data.sessionId);
-			}
-		}
-
-		return sessionIds;
 	}
 }
