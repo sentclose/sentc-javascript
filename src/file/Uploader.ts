@@ -28,7 +28,10 @@ export class Uploader
 		}
 
 		//create a new file on the server, and save the content key id
-		const session_id = await file_register_file(this.base_url, this.app_token, jwt, content_key);
+		//TODO belongs to type and id, via caller from group or user
+		const out = await file_register_file(this.base_url, this.app_token, jwt, content_key);
+		const session_id = out.get_session_id();
+		const file_id = out.get_file_id();
 
 		let start = 0;
 		let end = this.chunk_size;
@@ -61,5 +64,7 @@ export class Uploader
 
 			this.upload_callback(currentChunk / totalChunks);
 		}
+
+		return file_id;
 	}
 }
