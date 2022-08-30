@@ -6,7 +6,7 @@ import {Mutex} from "./Mutex";
 import {StorageFactory, StorageInterface} from "../core";
 import {file_download_and_decrypt_file_part, file_download_file_meta} from "sentc_wasm";
 import {User} from "../User";
-import {FileMetaInformation} from "../Enities";
+import {FileMetaInformation, PartListItem} from "../Enities";
 
 export class Downloader
 {
@@ -72,18 +72,20 @@ export class Downloader
 		};
 	}
 
-	public downloadFileParts(part_list: string[], content_key: string): Promise<string>;
+	public downloadFileParts(part_list: PartListItem[], content_key: string): Promise<string>;
 
-	public downloadFileParts(part_list: string[], content_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
+	public downloadFileParts(part_list: PartListItem[], content_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
 
-	public downloadFileParts(part_list: string[], content_key: string, updateProgressCb: (progress: number) => void | undefined, verify_key: string): Promise<string>;
+	public downloadFileParts(part_list: PartListItem[], content_key: string, updateProgressCb: (progress: number) => void | undefined, verify_key: string): Promise<string>;
 
 	public async downloadFileParts(
-		part_list: string[],
+		part_list: PartListItem[],
 		content_key: string,
 		updateProgressCb?: (progress: number) => void,
 		verify_key = ""
 	) {
+		//TODO: if the part is external_storage = true then load it from the external storage url in the app file options
+
 		const jwt = await this.user.getJwt();
 
 		const unlock = await Downloader.mutex.lock();
@@ -96,7 +98,7 @@ export class Downloader
 
 			try {
 				// eslint-disable-next-line no-await-in-loop
-				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, jwt, part_list[i], content_key, verify_key);
+				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, jwt, part_list[i].part_id, content_key, verify_key);
 			} catch (e) {
 				// eslint-disable-next-line no-await-in-loop
 				await Downloader.reset();	//remove the downloaded parts from the store
