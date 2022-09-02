@@ -185,6 +185,7 @@ export class Group extends AbstractSymCrypto
 
 		const keys = [];
 
+		//TODO use prepare keys here
 		for (let i = 0; i < this.data.keys.length; i++) {
 			const key = this.data.keys[i].group_key;
 			keys.push(key);
