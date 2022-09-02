@@ -128,5 +128,7 @@ export interface FileMetaInformation {
 	belongs_to?: string,
 	belongs_to_type: any,
 	key_id: string,
-	part_list: PartListItem[]
+	part_list: PartListItem[],
+	file_name?: string,
+	encrypted_file_name?: string
 }

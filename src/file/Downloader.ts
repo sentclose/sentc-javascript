@@ -4,7 +4,7 @@
  */
 import {Mutex} from "./Mutex";
 import {StorageFactory, StorageInterface} from "../core";
-import {file_download_and_decrypt_file_part, file_download_file_meta} from "sentc_wasm";
+import {file_download_and_decrypt_file_part, file_download_file_meta, file_download_part_list} from "sentc_wasm";
 import {User} from "../User";
 import {FileMetaInformation, PartListItem} from "../Enities";
 
@@ -49,27 +49,71 @@ export class Downloader
 		this.mutex = new Mutex();
 	}
 
-	constructor(private base_url: string, private app_token: string, private user: User, private part_url = "")
-	{
+	constructor(
+		private base_url: string,
+		private app_token: string,
+		private user: User,
+		private part_url = "",
+		private group_id?: string
+	) {
 		//the base url can be different when serving the files from a different storage
 
 		Downloader.init();
 	}
 
+	/**
+	 * Get the file info and the first page of the file part list
+	 *
+	 * @param file_id
+	 */
 	public async downloadFileMetaInformation(file_id: string): Promise<FileMetaInformation>
 	{
 		const jwt = await this.user.getJwt();
 
 		//make a req to get the file info
-		const file_meta = await file_download_file_meta(this.base_url, this.app_token, jwt, file_id);
+		const file_meta = await file_download_file_meta(this.base_url, this.app_token, jwt, file_id, this.group_id);
+
+		//TODO test belongs to type enum
+		const belongs_to_type = file_meta.get_belongs_to_type();
+
+		const part_list: PartListItem[] = file_meta.get_part_list();
+
+		if (part_list.length >= 500) {
+			//download parts via pagination
+			let last_item = part_list[part_list.length - 1];
+			let next_fetch = true;
+
+			while (next_fetch) {
+				// eslint-disable-next-line no-await-in-loop
+				const fetched_parts = await this.downloadFilePartList(file_id, last_item);
+
+				part_list.push(...fetched_parts);
+				next_fetch = fetched_parts.length >= 500;
+				last_item = fetched_parts[fetched_parts.length - 1];
+			}
+		}
 
 		return {
 			belongs_to: file_meta.get_belongs_to(),
-			belongs_to_type: file_meta.get_belongs_to_type(),	//TODO test belongs to type enum
+			belongs_to_type,
 			file_id: file_meta.get_file_id(),
 			key_id: file_meta.get_key_id(),
-			part_list: file_meta.get_part_list()
+			part_list,
+			encrypted_file_name: file_meta.get_encrypted_file_name()
 		};
+	}
+
+	/**
+	 * Download the rest of the part list via pagination
+	 *
+	 * @param file_id
+	 * @param last_item
+	 */
+	public downloadFilePartList(file_id: string, last_item: PartListItem | null = null): Promise<PartListItem[]>
+	{
+		const last_seq = last_item?.sequence + "" ?? "";
+
+		return file_download_part_list(this.base_url, this.app_token, file_id, last_seq);
 	}
 
 	public downloadFileParts(part_list: PartListItem[], content_key: string): Promise<string>;
@@ -86,8 +130,6 @@ export class Downloader
 	) {
 		//TODO: if the part is external_storage = true then load it from the external storage url in the app file options
 
-		const jwt = await this.user.getJwt();
-
 		const unlock = await Downloader.mutex.lock();
 		const storage = await Downloader.getStorage();
 
@@ -98,7 +140,7 @@ export class Downloader
 
 			try {
 				// eslint-disable-next-line no-await-in-loop
-				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, jwt, part_list[i].part_id, content_key, verify_key);
+				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
 			} catch (e) {
 				// eslint-disable-next-line no-await-in-loop
 				await Downloader.reset();	//remove the downloaded parts from the store
@@ -142,6 +184,8 @@ export class Downloader
 	{
 		//make a req to get the file info
 		const file_meta = await this.downloadFileMetaInformation(file_id);
+
+		//TODO decrypt the file name
 
 		const url = await this.downloadFileParts(file_meta.part_list, content_key, updateProgressCb, verify_key);
 
