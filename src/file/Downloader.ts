@@ -4,7 +4,12 @@
  */
 import {Mutex} from "./Mutex";
 import {StorageFactory, StorageInterface} from "../core";
-import {file_download_and_decrypt_file_part, file_download_file_meta, file_download_part_list} from "sentc_wasm";
+import {
+	decrypt_string_symmetric,
+	file_download_and_decrypt_file_part,
+	file_download_file_meta,
+	file_download_part_list
+} from "sentc_wasm";
 import {User} from "../User";
 import {FileMetaInformation, PartListItem} from "../Enities";
 
@@ -185,7 +190,7 @@ export class Downloader
 		//make a req to get the file info
 		const file_meta = await this.downloadFileMetaInformation(file_id);
 
-		//TODO decrypt the file name
+		file_meta.file_name = decrypt_string_symmetric(content_key, file_meta.encrypted_file_name, verify_key);
 
 		const url = await this.downloadFileParts(file_meta.part_list, content_key, updateProgressCb, verify_key);
 
