@@ -51,6 +51,8 @@ export class Downloader
 			return;
 		}
 
+		this.is_init = true;
+
 		this.mutex = new Mutex();
 	}
 
