@@ -3,6 +3,7 @@
  * @since 2022/08/12
  */
 import {
+	FileMetaInformation,
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
@@ -42,6 +43,7 @@ import {
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
+import {Downloader, Uploader} from "./file";
 
 /**
  * Get a group, from the storage or the server
@@ -761,5 +763,61 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public createFile(file: File): Promise<[string, string]>;
+
+	public createFile(file: File, sign: true): Promise<[string, string]>;
+
+	public createFile(file: File, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public createFile(file: File, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public async createFile(file: File, sign = false, upload_callback?: (progress?: number) => void)
+	{
+		//1st register a new key for this file
+		const key = await this.registerKey();
+
+		//2nd encrypt and upload the file, use the created key
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+
+		const file_id = await uploader.uploadFile(file, key.key, sign);
+
+		return [
+			file_id,
+			key.master_key_id
+		];
+	}
+
+	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation]>;
+
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation]>;
+
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation]>;
+
+	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	{
+		const downloader = new Downloader(this.base_url, this.app_token, this.user);
+
+		//1. get the file info
+		const file_meta = await downloader.downloadFileMetaInformation(file_id);
+
+		//2. get the content key which was used to encrypt the file
+		const key_id = file_meta.key_id;
+		const key = await this.fetchKey(key_id, master_key_id);
+
+		//3. get the file name if any
+		if (file_meta.file_name && file_meta.file_name !== "") {
+			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
+		}
+
+		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
+
+		return [
+			url,
+			file_meta
+		];
 	}
 }
