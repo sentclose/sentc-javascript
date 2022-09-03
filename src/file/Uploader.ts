@@ -17,10 +17,10 @@ export class Uploader
 		private base_url: string,
 		private app_token: string,
 		private user: User,
-		private chunk_size = 1024 * 1024 * 4,
-		private upload_callback?: (progress?: number) => void,
 		private group_id?: string,
-		private other_user_id?: string
+		private other_user_id?: string,
+		private upload_callback?: (progress?: number) => void,
+		private chunk_size = 1024 * 1024 * 4
 	) {
 		if (group_id && group_id !== "") {
 			this.belongs_to_id = group_id;
