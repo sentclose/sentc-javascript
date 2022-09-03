@@ -283,7 +283,8 @@ export class Sentc
 
 		await Promise.all([
 			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, userData),
-			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier)
+			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier),
+			storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + userData.user_id, {key: userData.exported_public_key, id: userData.user_id})
 		]);
 
 		return new User(Sentc.options.base_url, Sentc.options.app_token, userData, userIdentifier);
@@ -327,7 +328,8 @@ export class Sentc
 
 		await Promise.all([
 			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, store_user_data),
-			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier)
+			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier),
+			storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + userData.user_id, {key: userData.exported_public_key, id: userData.user_id})
 		]);
 
 		return new User(Sentc.options.base_url, Sentc.options.app_token, userData, userIdentifier);
