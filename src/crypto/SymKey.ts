@@ -15,7 +15,7 @@ export class SymKey
 	constructor(
 		private base_url:string,
 		private app_token: string,
-		private key: string,
+		public key: string,
 		private key_id: string,
 		public master_key_id: string,	//this is important to save it to decrypt this key later
 		private sign_key: string
