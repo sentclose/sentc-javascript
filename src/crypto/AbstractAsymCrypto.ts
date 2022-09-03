@@ -140,7 +140,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public async registerKey(reply_id:string)
+	public async registerKey(reply_id: string)
 	{
 		const key_data = await this.getPublicKey(reply_id);
 
