@@ -24,7 +24,7 @@ module.exports = {
 		]
 	},
 	resolve: {
-		//mainFields: ["browser", "main"],	//activate this to build the web test with cjs
+		mainFields: ["module"],
 		extensions: [".tsx", ".ts", ".js"]
 	},
 	output: {

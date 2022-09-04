@@ -1,5 +1,5 @@
 import {User} from "../User";
-import {file_register_file, file_upload_part} from "sentc_wasm";
+import {file_done_register_file, file_prepare_register_file, file_register_file, file_upload_part} from "sentc_wasm";
 import {FileHelper} from "./FileHelper";
 
 /**
@@ -17,10 +17,10 @@ export class Uploader
 		private base_url: string,
 		private app_token: string,
 		private user: User,
-		private chunk_size = 1024 * 1024 * 4,
-		private upload_callback?: (progress?: number) => void,
 		private group_id?: string,
-		private other_user_id?: string
+		private other_user_id?: string,
+		private upload_callback?: (progress?: number) => void,
+		private chunk_size = 1024 * 1024 * 4
 	) {
 		if (group_id && group_id !== "") {
 			this.belongs_to_id = group_id;
@@ -34,7 +34,27 @@ export class Uploader
 		}
 	}
 
-	public async uploadFile(file: File, content_key: string, sign = false)
+	public prepareFileRegister(file: File, content_key: string)
+	{
+		const out = file_prepare_register_file(content_key, this.belongs_to_id, this.belongs_to, file.name);
+
+		const encrypted_file_name = out.get_encrypted_file_name();
+		const server_input = out.get_server_input();
+
+		return [server_input, encrypted_file_name];
+	}
+
+	public doneFileRegister(server_output: string)
+	{
+		const out = file_done_register_file(server_output);
+
+		const file_id = out.get_file_id();
+		const session_id = out.get_session_id();
+
+		return [file_id, session_id];
+	}
+
+	public async checkFileUpload(file: File, content_key: string, session_id: string, sign = false)
 	{
 		const jwt = await this.user.getJwt();
 
@@ -43,21 +63,6 @@ export class Uploader
 		if (sign) {
 			sign_key = await this.user.getSignKey();
 		}
-
-		//create a new file on the server, and save the content key id
-		const out = await file_register_file(
-			this.base_url,
-			this.app_token,
-			jwt,
-			content_key,
-			this.belongs_to_id,
-			this.belongs_to,
-			file.name,
-			this.group_id
-		);
-
-		const session_id = out.get_session_id();
-		const file_id = out.get_file_id();
 
 		let start = 0;
 		let end = this.chunk_size;
@@ -88,9 +93,34 @@ export class Uploader
 				new Uint8Array(part)
 			);
 
-			this.upload_callback(currentChunk / totalChunks);
+			if (this.upload_callback) {
+				this.upload_callback(currentChunk / totalChunks);
+			}
 		}
+	}
 
-		return file_id;
+	public async uploadFile(file: File, content_key: string, sign = false)
+	{
+		const jwt = await this.user.getJwt();
+
+		//create a new file on the server, and save the content key id
+		const out = await file_register_file(
+			this.base_url,
+			this.app_token,
+			jwt,
+			content_key,
+			this.belongs_to_id,
+			this.belongs_to,
+			file.name,
+			this.group_id ? this.group_id : ""
+		);
+
+		const session_id = out.get_session_id();
+		const file_id = out.get_file_id();
+		const encrypted_file_name = out.get_encrypted_file_name();
+
+		await this.checkFileUpload(file, content_key, session_id, sign);
+
+		return [file_id, encrypted_file_name];
 	}
 }

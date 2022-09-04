@@ -3,6 +3,8 @@
  * @since 2022/08/12
  */
 import {
+	FileCreateOutput,
+	FileMetaInformation, FilePrepareCreateOutput,
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
@@ -12,6 +14,7 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
+	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
 	group_decrypt_key,
@@ -42,6 +45,8 @@ import {
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
+import {Downloader, Uploader} from "./file";
+import {SymKey} from ".";
 
 /**
  * Get a group, from the storage or the server
@@ -761,5 +766,110 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public async prepareRegisterFile(file: File): Promise<FilePrepareCreateOutput>
+	{
+		const key = await this.registerKey();
+
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+
+		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key);
+
+		return {
+			server_input,
+			encrypted_file_name,
+			key,
+			master_key_id: key.master_key_id
+		};
+	}
+
+	public doneFileRegister(server_output: string)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+
+		uploader.doneFileRegister(server_output);
+	}
+	
+	public uploadFile(file: File, content_key: SymKey): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+
+		return uploader.uploadFile(file, content_key.key, sign);
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public createFile(file: File): Promise<FileCreateOutput>;
+
+	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
+
+	public createFile(file: File, sign: false, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
+
+	public createFile(file: File, sign: true, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
+
+	public async createFile(file: File, sign = false, upload_callback?: (progress?: number) => void)
+	{
+		//1st register a new key for this file
+		const key = await this.registerKey();
+
+		//2nd encrypt and upload the file, use the created key
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+
+		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, sign);
+
+		return {
+			file_id,
+			master_key_id: key.master_key_id,
+			encrypted_file_name
+		};
+	}
+
+	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;
+
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
+
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
+
+	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	{
+		const downloader = new Downloader(this.base_url, this.app_token, this.user, "", this.data.group_id);
+
+		//1. get the file info
+		const file_meta = await downloader.downloadFileMetaInformation(file_id);
+
+		//2. get the content key which was used to encrypt the file
+		const key_id = file_meta.key_id;
+		const key = await this.fetchKey(key_id, master_key_id);
+
+		//3. get the file name if any
+		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {
+			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
+		}
+
+		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
+
+		return [
+			url,
+			file_meta,
+			key
+		];
+	}
+
+	public async deleteFile(file_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id);
 	}
 }

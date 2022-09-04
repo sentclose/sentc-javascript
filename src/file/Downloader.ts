@@ -51,6 +51,8 @@ export class Downloader
 			return;
 		}
 
+		this.is_init = true;
+
 		this.mutex = new Mutex();
 	}
 
@@ -76,10 +78,13 @@ export class Downloader
 		const jwt = await this.user.getJwt();
 
 		//make a req to get the file info
-		const file_meta = await file_download_file_meta(this.base_url, this.app_token, jwt, file_id, this.group_id);
-
-		//TODO test belongs to type enum
-		const belongs_to_type = file_meta.get_belongs_to_type();
+		const file_meta = await file_download_file_meta(
+			this.base_url,
+			this.app_token,
+			jwt,
+			file_id,
+			this.group_id ? this.group_id : ""
+		);
 
 		const part_list: PartListItem[] = file_meta.get_part_list();
 
@@ -100,7 +105,7 @@ export class Downloader
 
 		return {
 			belongs_to: file_meta.get_belongs_to(),
-			belongs_to_type,
+			belongs_to_type: file_meta.get_belongs_to_type(),
 			file_id: file_meta.get_file_id(),
 			key_id: file_meta.get_key_id(),
 			part_list,

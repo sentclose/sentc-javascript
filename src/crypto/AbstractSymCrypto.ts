@@ -170,7 +170,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key = await this.getSymKeyById(master_key_id);
 
-		const key_out = await get_sym_key_by_id(this.base_url, this.app_token, key_id, key[0]);
+		const key_out = await get_sym_key_by_id(this.base_url, this.app_token, key_id, key);
 
 		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id, await this.getSignKey());
 	}
