@@ -3,6 +3,7 @@
  * @since 2022/08/12
  */
 import {
+	FileCreateOutput,
 	FileMetaInformation,
 	GroupData,
 	GroupJoinReqListItem,
@@ -769,13 +770,13 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public createFile(file: File): Promise<[string, string]>;
+	public createFile(file: File): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true): Promise<[string, string]>;
+	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	public createFile(file: File, sign: false, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	public createFile(file: File, sign: true, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
 	public async createFile(file: File, sign = false, upload_callback?: (progress?: number) => void)
 	{
@@ -785,12 +786,13 @@ export class Group extends AbstractSymCrypto
 		//2nd encrypt and upload the file, use the created key
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
 
-		const file_id = await uploader.uploadFile(file, key.key, sign);
+		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, sign);
 
-		return [
+		return {
 			file_id,
-			key.master_key_id
-		];
+			master_key_id: key.master_key_id,
+			encrypted_file_name
+		};
 	}
 
 	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;

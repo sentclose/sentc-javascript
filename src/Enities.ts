@@ -132,3 +132,10 @@ export interface FileMetaInformation {
 	file_name?: string,
 	encrypted_file_name?: string
 }
+
+export interface FileCreateOutput
+{
+	file_id: string,
+	master_key_id: string,
+	encrypted_file_name: string
+}

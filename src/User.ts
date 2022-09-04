@@ -1,5 +1,12 @@
 import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
-import {FileMetaInformation, GroupInviteListItem, GroupList, USER_KEY_STORAGE_NAMES, UserData} from "./Enities";
+import {
+	FileCreateOutput,
+	FileMetaInformation,
+	GroupInviteListItem,
+	GroupList,
+	USER_KEY_STORAGE_NAMES,
+	UserData
+} from "./Enities";
 import {
 	change_password, decode_jwt, delete_user, file_delete_file, file_file_name_update,
 	group_accept_invite, group_create_group, group_get_groups_for_user,
@@ -223,17 +230,17 @@ export class User extends AbstractAsymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public createFile(file: File): Promise<[string, string]>;
+	public createFile(file: File): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true): Promise<[string, string]>;
+	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: false, reply_id: string): Promise<[string, string]>;
+	public createFile(file: File, sign: false, reply_id: string): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true, reply_id: string): Promise<[string, string]>;
+	public createFile(file: File, sign: true, reply_id: string): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: false, reply_id: string, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	public createFile(file: File, sign: false, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true, reply_id: string, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	public createFile(file: File, sign: true, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
 	public async createFile(file: File, sign = false, reply_id = "", upload_callback?: (progress?: number) => void)
 	{
@@ -246,12 +253,13 @@ export class User extends AbstractAsymCrypto
 		//2nd encrypt and upload the file, use the created key
 		const uploader = new Uploader(this.base_url, this.app_token, this, undefined, other_user, upload_callback);
 
-		const file_id = await uploader.uploadFile(file, key.key, sign);
+		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, sign);
 
-		return [
+		return {
 			file_id,
-			key.master_key_id
-		];
+			master_key_id: key.master_key_id,
+			encrypted_file_name
+		};
 	}
 
 	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;
