@@ -843,7 +843,7 @@ export class Group extends AbstractSymCrypto
 
 	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
-		const downloader = new Downloader(this.base_url, this.app_token, this.user);
+		const downloader = new Downloader(this.base_url, this.app_token, this.user, "", this.data.group_id);
 
 		//1. get the file info
 		const file_meta = await downloader.downloadFileMetaInformation(file_id);
@@ -853,7 +853,7 @@ export class Group extends AbstractSymCrypto
 		const key = await this.fetchKey(key_id, master_key_id);
 
 		//3. get the file name if any
-		if (file_meta.file_name && file_meta.file_name !== "") {
+		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {
 			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
 		}
 

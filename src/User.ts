@@ -327,7 +327,7 @@ export class User extends AbstractAsymCrypto
 		const key = await this.fetchGeneratedKey(key_id, master_key_id);
 
 		//3. get the file name if any
-		if (file_meta.file_name && file_meta.file_name !== "") {
+		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {
 			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
 		}
 
