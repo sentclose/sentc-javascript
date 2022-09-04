@@ -110,7 +110,7 @@ export class Uploader
 			this.belongs_to_id,
 			this.belongs_to,
 			file.name,
-			this.group_id
+			this.group_id ? this.group_id : ""
 		);
 
 		const session_id = out.get_session_id();
