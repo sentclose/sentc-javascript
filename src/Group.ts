@@ -13,6 +13,7 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
+	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
 	group_decrypt_key,
@@ -44,6 +45,7 @@ import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
 import {Downloader, Uploader} from "./file";
+import {SymKey} from ".";
 
 /**
  * Get a group, from the storage or the server
@@ -791,11 +793,11 @@ export class Group extends AbstractSymCrypto
 		];
 	}
 
-	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation]>;
+	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation]>;
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation]>;
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
 	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
@@ -817,7 +819,15 @@ export class Group extends AbstractSymCrypto
 
 		return [
 			url,
-			file_meta
+			file_meta,
+			key
 		];
+	}
+
+	public async deleteFile(file_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id);
 	}
 }

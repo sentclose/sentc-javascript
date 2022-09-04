@@ -1,7 +1,7 @@
 import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
 import {FileMetaInformation, GroupInviteListItem, GroupList, USER_KEY_STORAGE_NAMES, UserData} from "./Enities";
 import {
-	change_password, decode_jwt, delete_user,
+	change_password, decode_jwt, delete_user, file_delete_file, file_file_name_update,
 	group_accept_invite, group_create_group, group_get_groups_for_user,
 	group_get_invites_for_user,
 	group_join_req, group_prepare_create_group,
@@ -11,6 +11,7 @@ import {
 import {Sentc} from "./Sentc";
 import {getGroup} from "./Group";
 import {Downloader, Uploader} from "./file";
+import {SymKey} from ".";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>
@@ -253,11 +254,11 @@ export class User extends AbstractAsymCrypto
 		];
 	}
 
-	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation]>;
+	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;
+	
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation]>;
-
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation]>;
+	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
 	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
@@ -279,7 +280,22 @@ export class User extends AbstractAsymCrypto
 
 		return [
 			url,
-			file_meta
+			file_meta,
+			key
 		];
+	}
+
+	public async updateFileName(file_id: string, content_key: SymKey, file_name: string)
+	{
+		const jwt = await this.getJwt();
+
+		return file_file_name_update(this.base_url, this.app_token, jwt, file_id, content_key.key, file_name);
+	}
+
+	public async deleteFile(file_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return file_delete_file(this.base_url, this.app_token, jwt, file_id, "");
 	}
 }
