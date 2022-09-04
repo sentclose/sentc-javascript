@@ -58,6 +58,7 @@ export class Uploader
 
 		const session_id = out.get_session_id();
 		const file_id = out.get_file_id();
+		const encrypted_file_name = out.get_encrypted_file_name();
 
 		let start = 0;
 		let end = this.chunk_size;
@@ -91,6 +92,6 @@ export class Uploader
 			this.upload_callback(currentChunk / totalChunks);
 		}
 
-		return file_id;
+		return [file_id, encrypted_file_name];
 	}
 }
