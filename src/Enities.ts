@@ -1,3 +1,5 @@
+import {SymKey} from "./crypto/SymKey";
+
 type GeneralIdFormat = string;
 export type UserId = GeneralIdFormat;
 
@@ -131,6 +133,14 @@ export interface FileMetaInformation {
 	part_list: PartListItem[],
 	file_name?: string,
 	encrypted_file_name?: string
+}
+
+export interface FilePrepareCreateOutput
+{
+	server_input: string,
+	master_key_id: string,
+	encrypted_file_name: string,
+	key: SymKey
 }
 
 export interface FileCreateOutput

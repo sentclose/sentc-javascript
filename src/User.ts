@@ -1,7 +1,7 @@
 import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
 import {
 	FileCreateOutput,
-	FileMetaInformation,
+	FileMetaInformation, FilePrepareCreateOutput,
 	GroupInviteListItem,
 	GroupList,
 	USER_KEY_STORAGE_NAMES,
@@ -226,6 +226,53 @@ export class User extends AbstractAsymCrypto
 	public getGroup(group_id: string)
 	{
 		return getGroup(group_id, this.base_url, this.app_token, this);
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public prepareRegisterFile(file: File): Promise<FilePrepareCreateOutput>;
+
+	public prepareRegisterFile(file: File, reply_id: string): Promise<FilePrepareCreateOutput>;
+
+	public async prepareRegisterFile(file: File, reply_id = ""): Promise<FilePrepareCreateOutput>
+	{
+		const key = await this.registerKey(reply_id);
+
+		reply_id = (reply_id !== "") ? reply_id : this.user_data.user_id;
+		const other_user = (reply_id !== "") ? reply_id : undefined;
+
+		const uploader = new Uploader(this.base_url, this.app_token, this, undefined, other_user);
+
+		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key);
+
+		return {
+			server_input,
+			encrypted_file_name,
+			key,
+			master_key_id: key.master_key_id
+		};
+	}
+
+	public doneFileRegister(server_output: string)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this);
+
+		uploader.doneFileRegister(server_output);
+	}
+
+	public uploadFile(file: File, content_key: SymKey): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this, undefined, undefined, upload_callback);
+
+		return uploader.uploadFile(file, content_key.key, sign);
 	}
 
 	//__________________________________________________________________________________________________________________

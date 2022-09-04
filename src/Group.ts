@@ -4,7 +4,7 @@
  */
 import {
 	FileCreateOutput,
-	FileMetaInformation,
+	FileMetaInformation, FilePrepareCreateOutput,
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
@@ -766,6 +766,46 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public async prepareRegisterFile(file: File): Promise<FilePrepareCreateOutput>
+	{
+		const key = await this.registerKey();
+
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+
+		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key);
+
+		return {
+			server_input,
+			encrypted_file_name,
+			key,
+			master_key_id: key.master_key_id
+		};
+	}
+
+	public doneFileRegister(server_output: string)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+
+		uploader.doneFileRegister(server_output);
+	}
+	
+	public uploadFile(file: File, content_key: SymKey): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+
+	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
+	{
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+
+		return uploader.uploadFile(file, content_key.key, sign);
 	}
 
 	//__________________________________________________________________________________________________________________
