@@ -43,7 +43,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "export_cdn": "webpack --config webpack/cdn_webpack.config.js",
-    "test_web_module": "webpack --config webpack/lib_webpack.config.js"
+    "test_web_module": "webpack --config webpack/web_test_webpack.config.js",
+    "test_web_file_module": "webpack --config webpack/web_file_test_webpack.config.js"
   },
   "dependencies": {
     "idb": "^6.1.4",
