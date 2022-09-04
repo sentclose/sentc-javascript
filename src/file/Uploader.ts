@@ -93,7 +93,9 @@ export class Uploader
 				new Uint8Array(part)
 			);
 
-			this.upload_callback(currentChunk / totalChunks);
+			if (this.upload_callback) {
+				this.upload_callback(currentChunk / totalChunks);
+			}
 		}
 	}
 
