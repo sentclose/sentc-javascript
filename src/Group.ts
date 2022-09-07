@@ -182,21 +182,13 @@ export class Group extends AbstractSymCrypto
 		return list;
 	}
 
-	public async prepareKeysForNewMember(user_id: string)
+	public async prepareKeysForNewMember(user_id: string, page = 0)
 	{
 		const key_count = this.data.keys.length;
 		
 		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
-		const keys = [];
-
-		//TODO use prepare keys here
-		for (let i = 0; i < this.data.keys.length; i++) {
-			const key = this.data.keys[i].group_key;
-			keys.push(key);
-		}
-
-		const key_string = JSON.stringify(keys);
+		const [key_string] = this.prepareKeys(page);
 
 		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, this.data.rank);
 	}
