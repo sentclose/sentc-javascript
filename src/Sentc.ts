@@ -21,9 +21,9 @@ import init, {
 	user_fetch_public_key,
 	user_fetch_verify_key
 } from "sentc_wasm";
-import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
+import {USER_KEY_STORAGE_NAMES, UserData, UserDeviceKeyData, UserId, UserKeyData} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
-import {User} from "./User";
+import {getUser, User} from "./User";
 
 export const enum REFRESH_ENDPOINT {
 	cookie,
@@ -58,7 +58,7 @@ export class Sentc
 	private static storage: StorageInterface;
 
 	//@ts-ignore
-	private static options: SentcOptions = {};
+	public static options: SentcOptions = {};
 	
 	public static async getStore()
 	{
@@ -262,32 +262,31 @@ export class Sentc
 	 *
 	 * prepare login is required
 	 */
-	public static async doneLogin(userIdentifier: string, master_key_encryption_key: string, done_login_server_output: string)
+	public static doneLogin(deviceIdentifier: string, master_key_encryption_key: string, done_login_server_output: string)
 	{
 		const out = done_login(master_key_encryption_key, done_login_server_output);
 
-		const userData: UserData = {
-			private_key: out.get_private_key(),
-			public_key: out.get_public_key(),
-			sign_key: out.get_sign_key(),
-			verify_key: out.get_verify_key(),
-			exported_public_key: out.get_exported_public_key(),
-			exported_verify_key: out.get_exported_verify_key(),
-			jwt: out.get_jwt(),
-			refresh_token: out.get_refresh_token(),
-			user_id: out.get_id()
+		const device: UserDeviceKeyData = {
+			private_key: out.get_device_private_key(),
+			public_key: out.get_device_public_key(),
+			sign_key: out.get_device_sign_key(),
+			verify_key: out.get_device_verify_key(),
+			exported_public_key: out.get_device_exported_public_key(),
+			exported_verify_key: out.get_device_exported_verify_key()
 		};
 
-		//save user data in indexeddb
-		const storage = await Sentc.getStore();
+		const user_keys: UserKeyData[] = out.get_user_keys();
 
-		await Promise.all([
-			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, userData),
-			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier),
-			storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + userData.user_id, {key: userData.exported_public_key, id: userData.user_id})
-		]);
+		const user_data: UserData = {
+			device,
+			user_keys,
+			jwt: out.get_jwt(),
+			refresh_token: out.get_refresh_token(),
+			user_id: out.get_id(),
+			key_map: new Map()
+		};
 
-		return new User(Sentc.options.base_url, Sentc.options.app_token, userData, userIdentifier);
+		return getUser(deviceIdentifier, user_data);
 	}
 
 	/**
@@ -299,40 +298,31 @@ export class Sentc
 	 * Then the user is safe for xss and csrf attacks
 	 *
 	 */
-	public static async login(userIdentifier: string, password: string)
+	public static async login(deviceIdentifier: string, password: string)
 	{
-		const out = await login(Sentc.options.base_url, Sentc.options.app_token, userIdentifier, password);
+		const out = await login(Sentc.options.base_url, Sentc.options.app_token, deviceIdentifier, password);
 
-		const userData: UserData = {
-			private_key: out.get_private_key(),
-			public_key: out.get_public_key(),
-			sign_key: out.get_sign_key(),
-			verify_key: out.get_verify_key(),
-			exported_public_key: out.get_exported_public_key(),
-			exported_verify_key: out.get_exported_verify_key(),
+		const device: UserDeviceKeyData = {
+			private_key: out.get_device_private_key(),
+			public_key: out.get_device_public_key(),
+			sign_key: out.get_device_sign_key(),
+			verify_key: out.get_device_verify_key(),
+			exported_public_key: out.get_device_exported_public_key(),
+			exported_verify_key: out.get_device_exported_verify_key()
+		};
+		
+		const user_keys: UserKeyData[] = out.get_user_keys();
+
+		const user_data: UserData = {
+			device,
+			user_keys,
 			jwt: out.get_jwt(),
 			refresh_token: out.get_refresh_token(),
-			user_id: out.get_id()
+			user_id: out.get_id(),
+			key_map: new Map()
 		};
 
-		const store_user_data = userData;
-
-		if (Sentc.options.refresh.endpoint !== REFRESH_ENDPOINT.api) {
-			//if the refresh token should not be stored on the client -> invalidates the stored refresh token
-			//but just return the refresh token with the rest of the user data
-			store_user_data.refresh_token = "";
-		}
-
-		//save user data in indexeddb
-		const storage = await Sentc.getStore();
-
-		await Promise.all([
-			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, store_user_data),
-			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier),
-			storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + userData.user_id, {key: userData.exported_public_key, id: userData.user_id})
-		]);
-
-		return new User(Sentc.options.base_url, Sentc.options.app_token, userData, userIdentifier);
+		return getUser(deviceIdentifier, user_data);
 	}
 
 	/**

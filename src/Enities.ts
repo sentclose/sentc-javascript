@@ -15,7 +15,20 @@ export const enum USER_KEY_STORAGE_NAMES
 	groupData = "group_data"
 }
 
-export interface UserData
+export interface UserKeyData
+{
+	private_key: string,
+	public_key: string,
+	group_key: string,
+	time: number,
+	group_key_id: string,
+	sign_key: string,
+	verify_key: string,
+	exported_public_key: string,
+	exported_verify_key: string,
+}
+
+export interface UserDeviceKeyData
 {
 	private_key:string,
 	public_key: string,
@@ -23,6 +36,14 @@ export interface UserData
 	verify_key: string,
 	exported_public_key: string,
 	exported_verify_key: string,
+}
+
+export interface UserData
+{
+	device: UserDeviceKeyData,
+	user_keys: UserKeyData[],
+	key_map: Map<string, number>
+
 	jwt: string,
 	refresh_token: string,
 	user_id: string

@@ -377,7 +377,7 @@ export class Group extends AbstractSymCrypto
 		let public_key;
 
 		if (!this.data.from_parent) {
-			public_key = this.user.user_data.public_key;
+			public_key = this.user.getNewestPublicKey();
 		} else {
 			//get parent group public key
 			const storage = await Sentc.getStore();
@@ -409,7 +409,7 @@ export class Group extends AbstractSymCrypto
 	private async getPrivateKey(private_key_id: string)
 	{
 		if (!this.data.from_parent) {
-			return this.user.getPrivateKey();
+			return this.user.getPrivateKey(private_key_id);
 		}
 
 		//get parent group private key

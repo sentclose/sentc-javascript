@@ -5,25 +5,64 @@ import {
 	GroupInviteListItem,
 	GroupList,
 	USER_KEY_STORAGE_NAMES,
-	UserData
+	UserData, UserKeyData
 } from "./Enities";
 import {
-	change_password, decode_jwt, delete_user, file_delete_file, file_file_name_update,
-	group_accept_invite, group_create_group, group_get_groups_for_user,
+	change_password,
+	decode_jwt,
+	delete_user,
+	done_fetch_user_key,
+	fetch_user_key,
+	file_delete_file,
+	file_file_name_update,
+	group_accept_invite,
+	group_create_group,
+	group_get_groups_for_user,
 	group_get_invites_for_user,
-	group_join_req, group_prepare_create_group,
-	group_reject_invite, reset_password,
+	group_join_req,
+	group_prepare_create_group,
+	group_reject_invite,
+	reset_password,
 	update_user
 } from "sentc_wasm";
-import {Sentc} from "./Sentc";
+import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
 
-/**
- * @author Jörn Heinemann <joernheinemann@gmx.de>
- * @since 2022/08/20
- */
+export async function getUser(deviceIdentifier: string, user_data: UserData)
+{
+	//Only fetch the older keys when needed, this is not like a group where all keys must be available
+
+	//user key map
+	const key_map = user_data.key_map;
+
+	for (let i = 0; i < user_data.user_keys.length; i++) {
+		key_map.set(user_data.user_keys[i].group_key_id, i);
+	}
+
+	user_data.key_map = key_map;
+
+	const store_user_data = user_data;
+
+	if (Sentc.options.refresh.endpoint !== REFRESH_ENDPOINT.api) {
+		//if the refresh token should not be stored on the client -> invalidates the stored refresh token
+		//but just return the refresh token with the rest of the user data
+		store_user_data.refresh_token = "";
+	}
+
+	//save user data in indexeddb
+	const storage = await Sentc.getStore();
+
+	await Promise.all([
+		storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + deviceIdentifier, store_user_data),
+		storage.set(USER_KEY_STORAGE_NAMES.actualUser, deviceIdentifier),
+		//save always the newest public key
+		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_id})
+	]);
+
+	return new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
+}
 
 export class User extends AbstractAsymCrypto
 {
@@ -37,9 +76,30 @@ export class User extends AbstractAsymCrypto
 		super(base_url, app_token);
 	}
 
-	getPrivateKey(): Promise<string>
+	async getPrivateKey(key_id: string): Promise<string>
 	{
-		return Promise.resolve(this.user_data.private_key);
+		const index = this.user_data.key_map.get(key_id);
+
+		if (index === undefined) {
+			//try to fetch the keys from the server
+			await this.fetchUserKey(key_id);
+
+			const index = this.user_data.key_map.get(key_id);
+
+			if (index === undefined) {
+				//key not found TODO error
+				throw new Error();
+			}
+		}
+
+		const key = this.user_data.user_keys[index];
+
+		if (!key) {
+			//key not found TODO error
+			throw new Error();
+		}
+
+		return key.private_key;
 	}
 
 	async getPublicKey(reply_id: string): Promise<[string, string]>
@@ -49,9 +109,41 @@ export class User extends AbstractAsymCrypto
 		return [public_key.key, public_key.id];
 	}
 
+	public getNewestPublicKey()
+	{
+		return this.user_data.user_keys[0].public_key;
+	}
+
+	public getNewestSignKey()
+	{
+		return this.user_data.user_keys[0].sign_key;
+	}
+
 	getSignKey(): Promise<string>
 	{
-		return Promise.resolve(this.user_data.sign_key);
+		return Promise.resolve(this.getNewestSignKey());
+	}
+
+	public doneFetchUserKey(server_output: string)
+	{
+		const user_keys: UserKeyData = done_fetch_user_key(this.user_data.device.private_key, server_output);
+
+		const index = this.user_data.user_keys.length;
+		this.user_data.user_keys.push(user_keys);
+
+		this.user_data.key_map.set(user_keys.group_key_id, index);
+	}
+
+	public async fetchUserKey(key_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		const user_keys: UserKeyData = await fetch_user_key(this.base_url, this.app_token, jwt, key_id, this.user_data.device.private_key);
+
+		const index = this.user_data.user_keys.length;
+		this.user_data.user_keys.push(user_keys);
+
+		this.user_data.key_map.set(user_keys.group_key_id, index);
 	}
 
 	public async getJwt()
@@ -90,8 +182,8 @@ export class User extends AbstractAsymCrypto
 
 		const jwt = await this.getJwt();
 
-		const decryptedPrivateKey = this.user_data.private_key;
-		const decryptedSignKey = this.user_data.sign_key;
+		const decryptedPrivateKey = this.user_data.device.private_key;
+		const decryptedSignKey = this.user_data.device.sign_key;
 
 		return reset_password(
 			this.base_url,
@@ -213,14 +305,14 @@ export class User extends AbstractAsymCrypto
 	public prepareGroupCreate()
 	{
 		//important use the public key not the exported public key here!
-		return group_prepare_create_group(this.user_data.public_key);
+		return group_prepare_create_group(this.getNewestPublicKey());
 	}
 
 	public async createGroup()
 	{
 		const jwt = await this.getJwt();
 
-		return group_create_group(this.base_url, this.app_token, jwt, this.user_data.public_key);
+		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey());
 	}
 
 	public getGroup(group_id: string)
