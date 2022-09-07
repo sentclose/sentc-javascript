@@ -147,7 +147,7 @@ export class Group extends AbstractSymCrypto
 
 	public prepareCreateChildGroup()
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
+		const latest_key = this.data.keys[0];
 
 		const group_input = group_prepare_create_group(latest_key.public_group_key);
 
@@ -156,7 +156,7 @@ export class Group extends AbstractSymCrypto
 
 	public async createChildGroup()
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
+		const latest_key = this.data.keys[0].public_group_key;
 
 		const jwt = await this.user.getJwt();
 
@@ -390,7 +390,7 @@ export class Group extends AbstractSymCrypto
 			}
 
 			//use the latest key
-			public_key = parent_group.keys[parent_group.keys.length - 1].public_group_key;
+			public_key = parent_group.keys[0].public_group_key;
 		}
 
 		return public_key;
@@ -457,7 +457,7 @@ export class Group extends AbstractSymCrypto
 		//if this is a child group -> start the key rotation with the parent key!
 		const public_key = await this.getPublicKey();
 
-		return group_prepare_key_rotation(this.data.keys[this.data.keys.length - 1].group_key, public_key);
+		return group_prepare_key_rotation(this.data.keys[0].group_key, public_key);
 	}
 
 	public async doneKeyRotation(server_output: string)
@@ -469,7 +469,7 @@ export class Group extends AbstractSymCrypto
 			this.getPrivateKey(out.encrypted_eph_key_key_id)
 		]);
 
-		return group_done_key_rotation(private_key, public_key, this.data.keys[this.data.keys.length - 1].group_key, server_output);
+		return group_done_key_rotation(private_key, public_key, this.data.keys[0].group_key, server_output);
 	}
 
 	public async keyRotation()
@@ -478,7 +478,7 @@ export class Group extends AbstractSymCrypto
 
 		const public_key = await this.getPublicKey();
 
-		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
+		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key);
 
 		return this.getGroupKey(key_id);
 	}
