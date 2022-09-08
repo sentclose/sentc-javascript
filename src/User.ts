@@ -78,13 +78,13 @@ export class User extends AbstractAsymCrypto
 
 	async getPrivateKey(key_id: string): Promise<string>
 	{
-		const index = this.user_data.key_map.get(key_id);
+		let index = this.user_data.key_map.get(key_id);
 
 		if (index === undefined) {
 			//try to fetch the keys from the server
 			await this.fetchUserKey(key_id);
 
-			const index = this.user_data.key_map.get(key_id);
+			index = this.user_data.key_map.get(key_id);
 
 			if (index === undefined) {
 				//key not found TODO error
@@ -144,6 +144,10 @@ export class User extends AbstractAsymCrypto
 		this.user_data.user_keys.push(user_keys);
 
 		this.user_data.key_map.set(user_keys.group_key_id, index);
+
+		const storage = await Sentc.getStore();
+
+		return storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier, this.user_data);
 	}
 
 	public async getJwt()
