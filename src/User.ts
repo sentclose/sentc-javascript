@@ -21,12 +21,12 @@ import {
 	group_get_invites_for_user,
 	group_join_req,
 	group_prepare_create_group,
-	group_reject_invite,
+	group_reject_invite, prepare_register_device, register_device,
 	reset_password,
 	update_user
 } from "sentc_wasm";
 import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
-import {getGroup} from "./Group";
+import {getGroup, prepareKeys} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
 
@@ -227,6 +227,47 @@ export class User extends AbstractAsymCrypto
 		);
 
 		return this.logOut();
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public prepareRegisterDevice(server_output: string, page = 0)
+	{
+		const key_count = this.user_data.user_keys.length;
+
+		const [key_string] = prepareKeys(this.user_data.user_keys, page);
+
+		return prepare_register_device(server_output, key_string, key_count);
+	}
+
+	public async registerDevice(server_output: string)
+	{
+		const key_count = this.user_data.user_keys.length;
+		const [key_string] = prepareKeys(this.user_data.user_keys);
+
+		const jwt = await this.getJwt();
+
+		const session_id = await register_device(this.base_url, this.app_token, jwt, server_output, key_count, key_string);
+
+		if (session_id === "") {
+			return;
+		}
+
+		let next_page = true;
+		let i = 1;
+		const p = [];
+
+		while (next_page) {
+			const next_keys = prepareKeys(this.user_data.user_keys, i);
+			next_page = next_keys[1];
+
+			//TODO session upload
+			p.push();
+
+			i++;
+		}
+
+		return Promise.all(p);
 	}
 
 	//__________________________________________________________________________________________________________________
