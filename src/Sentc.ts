@@ -7,16 +7,16 @@ import init, {
 	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
-	done_register,
+	done_register, done_register_device_start,
 	init_user,
 	InitInput,
 	login,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
-	prepare_register,
+	prepare_register, prepare_register_device_start,
 	refresh_jwt,
-	register,
+	register, register_device_start,
 	user_fetch_public_data,
 	user_fetch_public_key,
 	user_fetch_verify_key
@@ -233,6 +233,25 @@ export class Sentc
 		}
 
 		return register(Sentc.options.base_url, Sentc.options.app_token, userIdentifier, password);
+	}
+
+	public static prepareRegisterDeviceStart(device_identifier: string, password: string)
+	{
+		return prepare_register_device_start(device_identifier, password);
+	}
+
+	public static doneRegisterDeviceStart(server_output: string)
+	{
+		return done_register_device_start(server_output);
+	}
+
+	public static registerDeviceStart(device_identifier: string, password: string)
+	{
+		if (device_identifier === "" || password === "") {
+			return false;
+		}
+
+		return register_device_start(Sentc.options.base_url, Sentc.options.app_token, device_identifier, password);
 	}
 
 	/**
