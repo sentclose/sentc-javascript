@@ -11,7 +11,7 @@ import {
 	GroupKeyRotationOut,
 	GroupOutDataKeys, GroupUserListItem,
 	KeyRotationInput,
-	USER_KEY_STORAGE_NAMES
+	USER_KEY_STORAGE_NAMES, UserKeyData
 } from "./Enities";
 import {
 	file_delete_file,
@@ -47,6 +47,31 @@ import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
+
+export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string, boolean]
+{
+	const offset = page * 50;
+	const end = offset + 50;
+
+	const key_slice = keys.slice(offset, end);
+
+	let str = "[";
+
+	for (let i = 0; i < key_slice.length; i++) {
+		const key = keys[i].group_key;
+
+		str += key + ",";
+	}
+
+	//remove the trailing comma
+	str = str.slice(0, -1);
+
+	str += "]";
+
+	//it must be this string: [{"Aes":{"key":"D29y+nli2g4wn1GawdVmeGyo+W8HKc1cllkzqdEA2bA=","key_id":"123"}}]
+	
+	return [str, end < keys.length - 1];
+}
 
 /**
  * Get a group, from the storage or the server
@@ -669,27 +694,7 @@ export class Group extends AbstractSymCrypto
 
 	private prepareKeys(page = 0): [string, boolean]
 	{
-		const offset = page * 50;
-		const end = offset + 50;
-
-		const key_slice = this.data.keys.slice(offset, end);
-
-		let str = "[";
-
-		for (let i = 0; i < key_slice.length; i++) {
-			const key = this.data.keys[i].group_key;
-
-			str += key + ",";
-		}
-
-		//remove the trailing comma
-		str = str.slice(0, -1);
-
-		str += "]";
-
-		//it must be this string: [{"Aes":{"key":"D29y+nli2g4wn1GawdVmeGyo+W8HKc1cllkzqdEA2bA=","key_id":"123"}}]
-
-		return [str, end < this.data.keys.length - 1];
+		return prepareKeys(this.data.keys, page);
 	}
 
 	private async getGroupKey(key_id: string)
