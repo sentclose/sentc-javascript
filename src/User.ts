@@ -9,7 +9,7 @@ import {
 } from "./Enities";
 import {
 	change_password,
-	decode_jwt,
+	decode_jwt, delete_device,
 	delete_user,
 	done_fetch_user_key,
 	fetch_user_key,
@@ -225,6 +225,13 @@ export class User extends AbstractAsymCrypto
 			this.userIdentifier,
 			password
 		);
+
+		return this.logOut();
+	}
+
+	public async deleteDevice(password: string, device_id: string)
+	{
+		await delete_device(this.base_url, this.app_token, this.userIdentifier, password,device_id);
 
 		return this.logOut();
 	}
