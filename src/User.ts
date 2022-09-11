@@ -233,7 +233,10 @@ export class User extends AbstractAsymCrypto
 	{
 		await delete_device(this.base_url, this.app_token, this.userIdentifier, password, device_id);
 
-		return this.logOut();
+		if (device_id === this.user_data.device_id) {
+			//only log the device out if it is the actual used device
+			return this.logOut();
+		}
 	}
 
 	//__________________________________________________________________________________________________________________
