@@ -302,6 +302,7 @@ export class Sentc
 			jwt: out.get_jwt(),
 			refresh_token: out.get_refresh_token(),
 			user_id: out.get_id(),
+			device_id: out.get_device_id(),
 			key_map: new Map()
 		};
 
@@ -338,6 +339,7 @@ export class Sentc
 			jwt: out.get_jwt(),
 			refresh_token: out.get_refresh_token(),
 			user_id: out.get_id(),
+			device_id: out.get_device_id(),
 			key_map: new Map()
 		};
 
