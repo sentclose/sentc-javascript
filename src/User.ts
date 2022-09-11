@@ -231,7 +231,7 @@ export class User extends AbstractAsymCrypto
 
 	public async deleteDevice(password: string, device_id: string)
 	{
-		await delete_device(this.base_url, this.app_token, this.userIdentifier, password,device_id);
+		await delete_device(this.base_url, this.app_token, this.userIdentifier, password, device_id);
 
 		return this.logOut();
 	}
