@@ -11,7 +11,7 @@ describe("User tests", () => {
 		const sentc = window.Sentc.default;
 
 		await sentc.init({
-			app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn",
+			app_token: "5zMb6zs3dEM62n+FxjBilFPp+j9e7YUFA+7pi6Hi",
 			base_url: "http://127.0.0.1:3002"
 		});
 	});
