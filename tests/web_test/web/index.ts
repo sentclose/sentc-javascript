@@ -2,11 +2,11 @@ import Sentc, {Group} from "../../../src";
 
 export async function run()
 {
-	//app public token: RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn
-	//app sec token: YLPFfqKbFG0qgLpAMxzaavYwO5DK2mTScBK6YAXmo9QOS+MgXKHJXhPVwRq3lLZWaPg=
+	//app public token: 5zMb6zs3dEM62n+FxjBilFPp+j9e7YUFA+7pi6Hi
+	//app sec token: BNM76kOdUSVBGV8iBNRRnjMXNwv5hpGlaUDZhE5aKPGh1U0aa6uYxMUMtd2AHjj6OmQ=
 
 	await Sentc.init({
-		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn",
+		app_token: "5zMb6zs3dEM62n+FxjBilFPp+j9e7YUFA+7pi6Hi",
 		base_url: "http://127.0.0.1:3002"
 		//wasm_path: "http://localhost:8000/tests/web_test/web/dist/sentc_wasm_bg.wasm"
 	});
@@ -159,6 +159,46 @@ export async function run()
 	console.log("groups user 1", groups_user_1);
 	console.log("groups user 2", groups_user_2);
 
+	try {
+		console.log("add device");
+		//add and delete device
+
+		//transform this data to the main device to add it. in this case it is the user obj
+		const result = await Sentc.registerDeviceStart("my_new_device", "12345");
+
+		if (result === false) {
+			console.log("Failed to add device");
+			return;
+		}
+
+		await user.registerDevice(result);
+
+		//now try to log in with the new device
+		
+		const new_device = await Sentc.login("my_new_device", "12345");
+
+		console.log(new_device);
+
+		console.log("Log device out");
+
+		await new_device.logOut();
+
+		console.log("remove the device from the main device");
+
+		await user.deleteDevice(pw, new_device.user_data.device_id);
+
+		console.log("should not login with a deleted device");
+
+		try {
+			await Sentc.login("my_new_device", "12345");
+			console.log("logged in with deleted device. Not good!");
+		} catch (e) {
+			console.log("not logged in with deleted device");
+		}
+	} catch (e) {
+		console.log(e);
+	}
+
 	console.log("group delete");
 
 	await group.deleteGroup();
@@ -166,23 +206,6 @@ export async function run()
 	console.log("user delete");
 	await user.deleteUser(pw);
 	await user_2.deleteUser(pw);
-}
-
-/**
- * Uses this function to transform a random string into array
- *
- * @param {string} string
- * @returns {Uint8Array}
- */
-export function stringToByteArray(string)
-{
-	//@ts-ignore
-	return new TextEncoder("utf-8").encode(string);
-}
-
-export function byteArrayToString(b)
-{
-	return new TextDecoder().decode(b);
 }
 
 (async () => {

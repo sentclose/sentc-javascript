@@ -58,7 +58,7 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 		storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + deviceIdentifier, store_user_data),
 		storage.set(USER_KEY_STORAGE_NAMES.actualUser, deviceIdentifier),
 		//save always the newest public key
-		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_id})
+		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_keys[0].group_key_id})
 	]);
 
 	return new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
@@ -233,7 +233,10 @@ export class User extends AbstractAsymCrypto
 	{
 		await delete_device(this.base_url, this.app_token, this.userIdentifier, password, device_id);
 
-		return this.logOut();
+		if (device_id === this.user_data.device_id) {
+			//only log the device out if it is the actual used device
+			return this.logOut();
+		}
 	}
 
 	//__________________________________________________________________________________________________________________
