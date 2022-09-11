@@ -11,7 +11,7 @@ import {
 	GroupKeyRotationOut,
 	GroupOutDataKeys, GroupUserListItem,
 	KeyRotationInput,
-	USER_KEY_STORAGE_NAMES
+	USER_KEY_STORAGE_NAMES, UserKeyData
 } from "./Enities";
 import {
 	file_delete_file,
@@ -47,6 +47,31 @@ import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
+
+export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string, boolean]
+{
+	const offset = page * 50;
+	const end = offset + 50;
+
+	const key_slice = keys.slice(offset, end);
+
+	let str = "[";
+
+	for (let i = 0; i < key_slice.length; i++) {
+		const key = keys[i].group_key;
+
+		str += key + ",";
+	}
+
+	//remove the trailing comma
+	str = str.slice(0, -1);
+
+	str += "]";
+
+	//it must be this string: [{"Aes":{"key":"D29y+nli2g4wn1GawdVmeGyo+W8HKc1cllkzqdEA2bA=","key_id":"123"}}]
+	
+	return [str, end < keys.length - 1];
+}
 
 /**
  * Get a group, from the storage or the server
@@ -147,7 +172,7 @@ export class Group extends AbstractSymCrypto
 
 	public prepareCreateChildGroup()
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
+		const latest_key = this.data.keys[0];
 
 		const group_input = group_prepare_create_group(latest_key.public_group_key);
 
@@ -156,7 +181,7 @@ export class Group extends AbstractSymCrypto
 
 	public async createChildGroup()
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
+		const latest_key = this.data.keys[0].public_group_key;
 
 		const jwt = await this.user.getJwt();
 
@@ -182,21 +207,13 @@ export class Group extends AbstractSymCrypto
 		return list;
 	}
 
-	public async prepareKeysForNewMember(user_id: string)
+	public async prepareKeysForNewMember(user_id: string, page = 0)
 	{
 		const key_count = this.data.keys.length;
 		
 		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
-		const keys = [];
-
-		//TODO use prepare keys here
-		for (let i = 0; i < this.data.keys.length; i++) {
-			const key = this.data.keys[i].group_key;
-			keys.push(key);
-		}
-
-		const key_string = JSON.stringify(keys);
+		const [key_string] = this.prepareKeys(page);
 
 		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, this.data.rank);
 	}
@@ -377,7 +394,7 @@ export class Group extends AbstractSymCrypto
 		let public_key;
 
 		if (!this.data.from_parent) {
-			public_key = this.user.user_data.public_key;
+			public_key = this.user.getNewestPublicKey();
 		} else {
 			//get parent group public key
 			const storage = await Sentc.getStore();
@@ -390,7 +407,7 @@ export class Group extends AbstractSymCrypto
 			}
 
 			//use the latest key
-			public_key = parent_group.keys[parent_group.keys.length - 1].public_group_key;
+			public_key = parent_group.keys[0].public_group_key;
 		}
 
 		return public_key;
@@ -409,7 +426,7 @@ export class Group extends AbstractSymCrypto
 	private async getPrivateKey(private_key_id: string)
 	{
 		if (!this.data.from_parent) {
-			return this.user.getPrivateKey();
+			return this.user.getPrivateKey(private_key_id);
 		}
 
 		//get parent group private key
@@ -457,7 +474,7 @@ export class Group extends AbstractSymCrypto
 		//if this is a child group -> start the key rotation with the parent key!
 		const public_key = await this.getPublicKey();
 
-		return group_prepare_key_rotation(this.data.keys[this.data.keys.length - 1].group_key, public_key);
+		return group_prepare_key_rotation(this.data.keys[0].group_key, public_key);
 	}
 
 	public async doneKeyRotation(server_output: string)
@@ -469,7 +486,7 @@ export class Group extends AbstractSymCrypto
 			this.getPrivateKey(out.encrypted_eph_key_key_id)
 		]);
 
-		return group_done_key_rotation(private_key, public_key, this.data.keys[this.data.keys.length - 1].group_key, server_output);
+		return group_done_key_rotation(private_key, public_key, this.data.keys[0].group_key, server_output);
 	}
 
 	public async keyRotation()
@@ -478,7 +495,7 @@ export class Group extends AbstractSymCrypto
 
 		const public_key = await this.getPublicKey();
 
-		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
+		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key);
 
 		return this.getGroupKey(key_id);
 	}
@@ -677,27 +694,7 @@ export class Group extends AbstractSymCrypto
 
 	private prepareKeys(page = 0): [string, boolean]
 	{
-		const offset = page * 50;
-		const end = offset + 50;
-
-		const key_slice = this.data.keys.slice(offset, end);
-
-		let str = "[";
-
-		for (let i = 0; i < key_slice.length; i++) {
-			const key = this.data.keys[i].group_key;
-
-			str += key + ",";
-		}
-
-		//remove the trailing comma
-		str = str.slice(0, -1);
-
-		str += "]";
-
-		//it must be this string: [{"Aes":{"key":"D29y+nli2g4wn1GawdVmeGyo+W8HKc1cllkzqdEA2bA=","key_id":"123"}}]
-
-		return [str, end < this.data.keys.length - 1];
+		return prepareKeys(this.data.keys, page);
 	}
 
 	private async getGroupKey(key_id: string)
