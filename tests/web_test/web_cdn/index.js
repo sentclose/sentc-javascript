@@ -155,6 +155,46 @@ async function run() {
 	console.log("groups user 1", groups_user_1);
 	console.log("groups user 2", groups_user_2);
 
+	try {
+		console.log("add device");
+		//add and delete device
+
+		//transform this data to the main device to add it. in this case it is the user obj
+		const result = await sentc.registerDeviceStart("my_new_device", "12345");
+
+		if (result === false) {
+			console.log("Failed to add device");
+			return;
+		}
+
+		await user.registerDevice(result);
+
+		//now try to log in with the new device
+
+		const new_device = await sentc.login("my_new_device", "12345");
+
+		console.log(new_device);
+
+		console.log("Log device out");
+
+		await new_device.logOut();
+
+		console.log("remove the device from the main device");
+
+		await user.deleteDevice(pw, new_device.user_data.device_id);
+
+		console.log("should not login with a deleted device");
+
+		try {
+			await sentc.login("my_new_device", "12345");
+			console.log("logged in with deleted device. Not good!");
+		} catch (e) {
+			console.log("not logged in with deleted device");
+		}
+	} catch (e) {
+		console.log(e);
+	}
+
 	console.log("group delete");
 
 	await group.deleteGroup();
