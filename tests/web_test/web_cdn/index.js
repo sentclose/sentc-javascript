@@ -180,6 +180,17 @@ async function run() {
 
 		await new_device.logOut();
 
+		console.log("get all devices");
+
+		const device_list = await user.getDevices();
+
+		console.log(device_list);
+
+		const device_list_pagination = await user.getDevices(device_list[0]);
+
+		console.log(device_list_pagination);
+
+		console.log("___________________________________________________");
 		console.log("remove the device from the main device");
 
 		await user.deleteDevice(pw, new_device.user_data.device_id);
