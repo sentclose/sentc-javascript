@@ -135,8 +135,8 @@ async function run()
 
 	const sentc = window.Sentc.default;
 
-	const username = "admin";
-	const username_2 = "admin1";
+	const username = "admin10";
+	const username_2 = "admin20";
 	const pw = "hello";
 
 	console.log("prepare");
