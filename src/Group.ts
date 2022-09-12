@@ -40,7 +40,8 @@ import {
 	group_prepare_update_rank,
 	group_reject_join_req,
 	group_update_rank,
-	leave_group
+	leave_group,
+	group_stop_group_invites
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -205,6 +206,13 @@ export class Group extends AbstractSymCrypto
 		);
 
 		return list;
+	}
+
+	public async stopInvites()
+	{
+		const jwt = await this.user.getJwt();
+
+		return group_stop_group_invites(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank);
 	}
 
 	public async prepareKeysForNewMember(user_id: string, page = 0)

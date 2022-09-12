@@ -210,6 +210,14 @@ export async function run()
 		console.log(e);
 	}
 
+	console.log("group stop invites");
+
+	await group.stopInvites();
+
+	console.log("group start invite");
+
+	await group.stopInvites();
+
 	console.log("group delete");
 
 	await group.deleteGroup();
