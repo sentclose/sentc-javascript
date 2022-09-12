@@ -158,9 +158,10 @@ async function run() {
 	try {
 		console.log("add device");
 		//add and delete device
+		const [device_identifier, device_pw] = sentc.generateRegisterData();
 
 		//transform this data to the main device to add it. in this case it is the user obj
-		const result = await sentc.registerDeviceStart("my_new_device", "12345");
+		const result = await sentc.registerDeviceStart(device_identifier, device_pw);
 
 		if (result === false) {
 			console.log("Failed to add device");
@@ -171,7 +172,7 @@ async function run() {
 
 		//now try to log in with the new device
 
-		const new_device = await sentc.login("my_new_device", "12345");
+		const new_device = await sentc.login(device_identifier, device_pw);
 
 		console.log(new_device);
 
@@ -186,7 +187,7 @@ async function run() {
 		console.log("should not login with a deleted device");
 
 		try {
-			await sentc.login("my_new_device", "12345");
+			await sentc.login(device_identifier, device_pw);
 			console.log("logged in with deleted device. Not good!");
 		} catch (e) {
 			console.log("not logged in with deleted device");
