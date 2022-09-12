@@ -7,7 +7,7 @@ import init, {
 	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
-	done_register, done_register_device_start,
+	done_register, done_register_device_start, generate_user_register_data,
 	init_user,
 	InitInput,
 	login,
@@ -192,6 +192,16 @@ export class Sentc
 	public static doneCheckUserIdentifierAvailable(serverOutput: string)
 	{
 		return done_check_user_identifier_available(serverOutput);
+	}
+
+	public static generateRegisterData()
+	{
+		const out = generate_user_register_data();
+
+		return [
+			out.get_identifier(),
+			out.get_password()
+		];
 	}
 
 	/**
