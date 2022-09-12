@@ -5,7 +5,7 @@ import {
 	GroupInviteListItem,
 	GroupList,
 	USER_KEY_STORAGE_NAMES,
-	UserData, UserKeyData
+	UserData, UserDeviceList, UserKeyData
 } from "./Enities";
 import {
 	change_password,
@@ -14,7 +14,7 @@ import {
 	done_fetch_user_key,
 	fetch_user_key,
 	file_delete_file,
-	file_file_name_update,
+	file_file_name_update, get_user_devices,
 	group_accept_invite,
 	group_create_group,
 	group_get_groups_for_user,
@@ -278,6 +278,18 @@ export class User extends AbstractAsymCrypto
 		}
 
 		return Promise.all(p);
+	}
+
+	public async getDevices(last_fetched_item: UserDeviceList | null = null)
+	{
+		const jwt = await this.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.device_id ?? "none";
+
+		const out: UserDeviceList[] = await get_user_devices(this.base_url, this.app_token, jwt, last_fetched_time, last_id);
+
+		return out;
 	}
 
 	//__________________________________________________________________________________________________________________

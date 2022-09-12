@@ -50,6 +50,13 @@ export interface UserData
 	device_id: string
 }
 
+export interface UserDeviceList
+{
+	device_id: string,
+	time: number,
+	device_identifier: string
+}
+
 export interface GroupKey {
 	private_group_key: string,
 	public_group_key: string,
