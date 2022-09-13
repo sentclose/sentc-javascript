@@ -410,8 +410,7 @@ export class Group extends AbstractSymCrypto
 			const parent_group: GroupData = await storage.getItem(parent_group_key);
 
 			if (!parent_group) {
-				//TODO err handling
-				throw new Error();
+				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
 			}
 
 			//use the latest key
@@ -443,8 +442,7 @@ export class Group extends AbstractSymCrypto
 		const parent_group_data: GroupData = await storage.getItem(parent_group_key);
 
 		if (!parent_group_data) {
-			//TODO err handling
-			throw new Error();
+			throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
 		}
 
 		const parent_group = new Group(parent_group_data, this.base_url, this.app_token, this.user);
@@ -732,15 +730,15 @@ export class Group extends AbstractSymCrypto
 
 			key_index = this.data.key_map.get(key_id);
 			if (!key_index) {
-				//key not found TODO error
-				throw new Error();
+				//key not found
+				throw new Error("Group key not found. Maybe done key rotation will help");
 			}
 		}
 
 		const key = this.data.keys[key_index];
 		if (!key) {
-			//key not found TODO error
-			throw new Error();
+			//key not found
+			throw new Error("Group key not found. Maybe done key rotation will help");
 		}
 
 		return key;

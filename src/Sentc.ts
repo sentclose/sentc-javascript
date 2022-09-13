@@ -433,15 +433,13 @@ export class Sentc
 		const actualUser: string = await storage.getItem(USER_KEY_STORAGE_NAMES.actualUser);
 
 		if (!actualUser) {
-			//TODO error handling
-			throw new Error();
+			throw new Error("No actual user found");
 		}
 
 		const user = await this.getUser(actualUser);
 
 		if (!user) {
-			//TODO error handling
-			throw new Error();
+			throw new Error("The actual user data was not found");
 		}
 
 		if (jwt) {
@@ -486,8 +484,12 @@ export class Sentc
 	 * @param app_token
 	 * @param user_id
 	 */
-	public static async getUserPublicData(base_url: string, app_token: string, user_id: string)
-	{
+	public static async getUserPublicData(base_url: string, app_token: string, user_id: string): Promise<{
+		public_key: string,
+		verify_key: string,
+		public_key_id: string,
+		verify_key_id: string
+	}> {
 		const storage = await this.getStore();
 
 		const store_key = USER_KEY_STORAGE_NAMES.userPublicData + "_id_" + user_id;
@@ -500,14 +502,21 @@ export class Sentc
 
 		const fetched_data = await user_fetch_public_data(base_url, app_token, user_id);
 
-		if (!fetched_data) {
-			//TODO error handling
-			throw new Error();
-		}
+		const public_key = fetched_data.get_public_key();
+		const public_key_id = fetched_data.get_public_key_id();
+		const verify_key = fetched_data.get_verify_key();
+		const verify_key_id = fetched_data.get_verify_key_id();
 
-		await storage.set(store_key, fetched_data);
+		const returns = {
+			public_key,
+			public_key_id,
+			verify_key,
+			verify_key_id
+		};
 
-		return fetched_data;
+		await storage.set(store_key, returns);
+
+		return returns;
 	}
 
 	/**
@@ -530,11 +539,6 @@ export class Sentc
 		}
 
 		const fetched_data = await user_fetch_public_key(base_url, app_token, user_id);
-
-		if (!fetched_data) {
-			//TODO error handling
-			throw new Error();
-		}
 
 		const key = fetched_data.get_public_key();
 		const id = fetched_data.get_public_key_id();
@@ -566,11 +570,6 @@ export class Sentc
 		}
 
 		const fetched_data = await user_fetch_verify_key(base_url, app_token, user_id);
-
-		if (!fetched_data) {
-			//TODO error handling
-			throw new Error();
-		}
 
 		const key = fetched_data.get_verify_key();
 		const id = fetched_data.get_verify_key_id();

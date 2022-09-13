@@ -5,8 +5,8 @@
 
 export type InitReturn = {
 	status: boolean, 	//if this store is supported
-	err?: string	//if not supported -> explain why (eg Indexeddb not supported)
-	warn?: string	//this store can be use but with drawbacks (eg MemoryStore not for large files or localStore not for files in general)
+	err?: string	//if not supported -> explain why (e.g. Indexeddb not supported)
+	warn?: string	//this store can be use but with drawbacks (e.g. MemoryStore not for large files or localStore not for files in general)
 }
 
 export interface StorageInterface

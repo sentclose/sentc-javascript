@@ -87,16 +87,16 @@ export class User extends AbstractAsymCrypto
 			index = this.user_data.key_map.get(key_id);
 
 			if (index === undefined) {
-				//key not found TODO error
-				throw new Error();
+				//key not found
+				throw new Error("Private key not found");
 			}
 		}
 
 		const key = this.user_data.user_keys[index];
 
 		if (!key) {
-			//key not found TODO error
-			throw new Error();
+			//key not found
+			throw new Error("Private key not found");
 		}
 
 		return key.private_key;
