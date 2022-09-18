@@ -44,6 +44,7 @@ export interface StorageOptions {
 export interface SentcOptions {
 	base_url?: string,
 	app_token: string,
+	file_part_url?: string,
 	refresh?: RefreshOptions,
 	storage?: StorageOptions,
 	wasm_path?: InitInput | Promise<InitInput>
@@ -472,7 +473,7 @@ export class Sentc
 			return false;
 		}
 
-		return new User(this.options.base_url, this.options.app_token, user, userIdentifier);
+		return new User(this.options.base_url, this.options.app_token, user, userIdentifier, this.options.file_part_url);
 	}
 
 	/**
