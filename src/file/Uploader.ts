@@ -83,6 +83,7 @@ export class Uploader
 			// eslint-disable-next-line no-await-in-loop
 			await file_upload_part(
 				this.base_url,
+				this.user.file_part_prefix_url,
 				this.app_token,
 				jwt,
 				session_id,

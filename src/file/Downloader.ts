@@ -60,7 +60,6 @@ export class Downloader
 		private base_url: string,
 		private app_token: string,
 		private user: User,
-		private part_url = "",
 		private group_id?: string
 	) {
 		//the base url can be different when serving the files from a different storage
@@ -138,19 +137,19 @@ export class Downloader
 		updateProgressCb?: (progress: number) => void,
 		verify_key = ""
 	) {
-		//TODO: if the part is external_storage = true then load it from the external storage url in the app file options
-
 		const unlock = await Downloader.mutex.lock();
 		const storage = await Downloader.getStorage();
 
-		const part_url_base = (this.part_url === "" || !this.part_url) ? this.base_url : this.part_url;
-
 		for (let i = 0; i < part_list.length; i++) {
+			const external = part_list[i].extern_storage === true;
+
+			const part_url_base = (external) ? this.user.file_part_prefix_url : "";
+
 			let part;
 
 			try {
 				// eslint-disable-next-line no-await-in-loop
-				part = await file_download_and_decrypt_file_part(part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
+				part = await file_download_and_decrypt_file_part(this.base_url, part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
 			} catch (e) {
 				// eslint-disable-next-line no-await-in-loop
 				await Downloader.reset();	//remove the downloaded parts from the store

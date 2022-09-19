@@ -846,7 +846,7 @@ export class Group extends AbstractSymCrypto
 
 	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
-		const downloader = new Downloader(this.base_url, this.app_token, this.user, "", this.data.group_id);
+		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id);
 
 		//1. get the file info
 		const file_meta = await downloader.downloadFileMetaInformation(file_id);
