@@ -23,6 +23,8 @@ export class Downloader
 
 	private static mutex: Mutex;
 
+	public static cancel_download = false;
+
 	public static async getStorage()
 	{
 		if (this.init_storage) {
@@ -140,6 +142,8 @@ export class Downloader
 		const unlock = await Downloader.mutex.lock();
 		const storage = await Downloader.getStorage();
 
+		Downloader.cancel_download = false;
+
 		for (let i = 0; i < part_list.length; i++) {
 			const external = part_list[i].extern_storage === true;
 
@@ -171,6 +175,16 @@ export class Downloader
 
 			if (updateProgressCb) {
 				updateProgressCb((i + 1) / part_list.length);
+			}
+
+			if (Downloader.cancel_download) {
+				Downloader.cancel_download = false;
+
+				// eslint-disable-next-line no-await-in-loop
+				await Downloader.reset();	//remove the downloaded parts from the store
+				unlock();
+
+				return "";
 			}
 		}
 

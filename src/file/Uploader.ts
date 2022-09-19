@@ -13,6 +13,8 @@ export class Uploader
 
 	private readonly belongs_to?: string;
 
+	public static cancel_upload = false;
+
 	constructor(
 		private base_url: string,
 		private app_token: string,
@@ -70,6 +72,9 @@ export class Uploader
 		const totalChunks = Math.ceil(file.size / this.chunk_size);
 		let currentChunk = 0;
 
+		//reset it just in case it was true
+		Uploader.cancel_upload = false;
+
 		while (start < file.size) {
 			++currentChunk;
 
@@ -96,6 +101,11 @@ export class Uploader
 
 			if (this.upload_callback) {
 				this.upload_callback(currentChunk / totalChunks);
+			}
+
+			if (Uploader.cancel_upload) {
+				Uploader.cancel_upload = false;
+				break;
 			}
 		}
 	}
