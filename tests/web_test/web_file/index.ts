@@ -1,4 +1,4 @@
-import Sentc, {Group, User, SymKey, FileMetaInformation} from "../../../src";
+import Sentc, {Group, User, SymKey, FileMetaInformation, Uploader, Downloader} from "../../../src";
 
 let user: User;
 let user_2: User;
@@ -17,12 +17,20 @@ function prepareForm()
 
 		//delete form
 		const btn = document.createElement("button");
-		btn.type = "Submit";
-		btn.name = "End test";
+		btn.type = "Button";
+		btn.innerHTML = "End test";
 		btn.value = "End test";
 		btn.addEventListener("click", endTest, false);
 
 		document.body.appendChild(btn);
+
+		//cancel upload
+		const cancel_btn = document.createElement("button");
+		cancel_btn.type = "Button";
+		cancel_btn.innerHTML = "Cancel";
+		cancel_btn.addEventListener("click", cancel, false);
+
+		document.body.appendChild(cancel_btn);
 	};
 }
 
@@ -102,6 +110,14 @@ async function downloadFile(file_id: string, master_key_id: string, group_for_us
 	a.click();
 
 	return content_key;
+}
+
+function cancel() {
+	console.log("________________________________");
+	console.log("Cancel upload");
+
+	Uploader.cancel_upload = true;
+	Downloader.cancel_download = true;
 }
 
 async function endTest()
