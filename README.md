@@ -43,7 +43,7 @@ The scripts can be downloaded from any CDN provider.
             //load a group. returned a group obj for every user.
             const group = await user.getGroup(group_id);
 			
-            //invite a user to a group
+            //invite a user to a group. use the sentc user id
             await group.invite("user_id_of_the_other_user");
 			
             //encrypt a string for the group
@@ -54,6 +54,8 @@ The scripts can be downloaded from any CDN provider.
 			
             console.log(decrypted_string);  //hello there!
         }
+		
+        run();
     </script>
 </body>
 </html>
