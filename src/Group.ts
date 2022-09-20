@@ -276,6 +276,7 @@ export class Group extends AbstractSymCrypto
 				this.app_token,
 				jwt,
 				this.data.group_id,
+				auto,
 				session_id,
 				public_key.key,
 				next_keys[0]
