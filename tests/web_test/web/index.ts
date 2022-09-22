@@ -179,10 +179,21 @@ export async function run()
 
 		console.log(new_device);
 
+		console.log("___________________________________________________");
+		console.log("device key rotation");
+
+		await user.keyRotation();
+
+		console.log("finish key rotation for other device");
+
+		await new_device.finishKeyRotation();
+
+		console.log("___________________________________________________");
 		console.log("Log device out");
 
 		await new_device.logOut();
 
+		console.log("___________________________________________________");
 		console.log("get all devices");
 
 		const device_list = await user.getDevices();
