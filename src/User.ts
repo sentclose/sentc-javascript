@@ -23,7 +23,7 @@ import {
 	group_prepare_create_group,
 	group_reject_invite, prepare_register_device, register_device,
 	reset_password,
-	update_user, user_finish_key_rotation, user_key_rotation, user_pre_done_key_rotation
+	update_user, user_device_key_session_upload, user_finish_key_rotation, user_key_rotation, user_pre_done_key_rotation
 } from "sentc_wasm";
 import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
@@ -269,7 +269,9 @@ export class User extends AbstractAsymCrypto
 
 		const jwt = await this.getJwt();
 
-		const session_id = await register_device(this.base_url, this.app_token, jwt, server_output, key_count, key_string);
+		const out = await register_device(this.base_url, this.app_token, jwt, server_output, key_count, key_string);
+		const session_id = out.get_session_id();
+		const public_key = out.get_public_key();
 
 		if (session_id === "") {
 			return;
@@ -283,13 +285,12 @@ export class User extends AbstractAsymCrypto
 			const next_keys = prepareKeys(this.user_data.user_keys, i);
 			next_page = next_keys[1];
 
-			//TODO session upload
-			p.push();
+			p.push(user_device_key_session_upload(this.base_url, this.app_token, jwt, session_id, public_key, next_keys[0]));
 
 			i++;
 		}
 
-		return Promise.all(p);
+		return Promise.allSettled(p);
 	}
 
 	public async getDevices(last_fetched_item: UserDeviceList | null = null)
