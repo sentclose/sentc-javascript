@@ -2,7 +2,7 @@ import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
 import {
 	FileCreateOutput,
 	FileMetaInformation, FilePrepareCreateOutput,
-	GroupInviteListItem,
+	GroupInviteListItem, GroupKeyRotationOut,
 	GroupList,
 	USER_KEY_STORAGE_NAMES,
 	UserData, UserDeviceList, UserKeyData
@@ -23,7 +23,7 @@ import {
 	group_prepare_create_group,
 	group_reject_invite, prepare_register_device, register_device,
 	reset_password,
-	update_user
+	update_user, user_finish_key_rotation, user_key_rotation, user_pre_done_key_rotation
 } from "sentc_wasm";
 import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
@@ -81,7 +81,7 @@ export class User extends AbstractAsymCrypto
 		}
 	}
 
-	async getPrivateKey(key_id: string): Promise<string>
+	private async getUserKeys(key_id: string)
 	{
 		let index = this.user_data.key_map.get(key_id);
 
@@ -93,7 +93,7 @@ export class User extends AbstractAsymCrypto
 
 			if (index === undefined) {
 				//key not found
-				throw new Error("Private key not found");
+				throw new Error("Key not found");
 			}
 		}
 
@@ -101,8 +101,15 @@ export class User extends AbstractAsymCrypto
 
 		if (!key) {
 			//key not found
-			throw new Error("Private key not found");
+			throw new Error("Key not found");
 		}
+
+		return key;
+	}
+
+	async getPrivateKey(key_id: string): Promise<string>
+	{
+		const key = await this.getUserKeys(key_id);
 
 		return key.private_key;
 	}
@@ -295,6 +302,70 @@ export class User extends AbstractAsymCrypto
 		const out: UserDeviceList[] = await get_user_devices(this.base_url, this.app_token, jwt, last_fetched_time, last_id);
 
 		return out;
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public async keyRotation()
+	{
+		const jwt = await this.getJwt();
+
+		const key_id = await user_key_rotation(this.base_url, this.app_token, jwt, this.user_data.device.public_key, this.user_data.user_keys[0].group_key);
+
+		return this.fetchUserKey(key_id);
+	}
+
+	public async finishKeyRotation()
+	{
+		const jwt = await this.getJwt();
+
+		let keys: GroupKeyRotationOut[] = await user_pre_done_key_rotation(this.base_url, this.app_token, jwt);
+
+		let next_round = false;
+		let rounds_left = 10;
+
+		const public_key = this.user_data.device.public_key;
+		const private_key = this.user_data.device.private_key;
+
+		do {
+			const left_keys = [];
+
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i];
+
+				let pre_key;
+
+				try {
+					// eslint-disable-next-line no-await-in-loop
+					pre_key = await this.getUserKeys(key.pre_group_key_id);
+				} catch (e) {
+					//key not found, try next round
+				}
+
+				if (pre_key === undefined) {
+					left_keys.push(key);
+					continue;
+				}
+
+				// eslint-disable-next-line no-await-in-loop
+				await user_finish_key_rotation(this.base_url, this.app_token, jwt, key.server_output, pre_key.group_key, public_key, private_key);
+
+				// eslint-disable-next-line no-await-in-loop
+				await this.getUserKeys(key.new_group_key_id);
+			}
+
+			rounds_left--;
+
+			if (left_keys.length > 0) {
+				keys = [];
+				//push the not found keys into the key array, maybe the pre group keys are in the next round
+				keys.push(...left_keys);
+
+				next_round = true;
+			} else {
+				next_round = false;
+			}
+		} while (next_round && rounds_left > 0);
 	}
 
 	//__________________________________________________________________________________________________________________
