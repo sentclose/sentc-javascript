@@ -103,6 +103,24 @@ async function run() {
 
 		console.log("encrypt result: ", decrypted_user_2);
 
+		//encrypt and decrypt with sign
+
+		const encrypted_by_user_1_sign = await group.encryptString("hello there £ Я a a 👍", true);
+
+		const decrypted_user_2_sign = await group_for_user_2.decryptString(encrypted_by_user_1_sign, true, user.user_data.user_id);
+
+		console.log("encrypt result with sign: ", decrypted_user_2_sign);
+
+		//try test with wrong verify
+
+		try {
+			await group_for_user_2.decryptString(encrypted_by_user_1_sign, true, user_2.user_data.user_id);
+
+			console.log("should be an error");
+		} catch (e) {
+			console.log("wrong verify should be an error: ", e);
+		}
+
 		// eslint-disable-next-line no-empty
 	} catch (e) {
 		console.error(e);
