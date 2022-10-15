@@ -19,6 +19,7 @@ import {
 	split_head_and_encrypted_string
 } from "sentc_wasm";
 import {SymKey} from "./SymKey";
+import {Sentc} from "../Sentc";
 
 export abstract class AbstractAsymCrypto extends AbstractCrypto
 {
@@ -97,12 +98,18 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 	public decrypt(data: Uint8Array): Promise<Uint8Array>;
 
-	public decrypt(data: Uint8Array, verify_key: string): Promise<Uint8Array>;
+	public decrypt(data: Uint8Array, verify: boolean, user_id: string): Promise<Uint8Array>;
 
-	public async decrypt(data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	public async decrypt(data: Uint8Array, verify = false, user_id?: string): Promise<Uint8Array>
 	{
 		const head: CryptoHead = split_head_and_encrypted_data(data);
 		const key = await this.getPrivateKey(head.id);
+
+		if (!head?.sign || !verify || !user_id) {
+			return decrypt_asymmetric(key, data, "");
+		}
+
+		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
 
 		return decrypt_asymmetric(key, data, verify_key);
 	}
@@ -128,12 +135,18 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 	public decryptString(data: string): Promise<string>;
 
-	public decryptString(data: string, verify_key: string): Promise<string>;
+	public decryptString(data: string, verify: boolean, user_id: string): Promise<string>;
 
-	public async decryptString(data: string, verify_key = ""): Promise<string>
+	public async decryptString(data: string, verify = false, user_id?: string): Promise<string>
 	{
 		const head: CryptoHead = split_head_and_encrypted_string(data);
 		const key = await this.getPrivateKey(head.id);
+
+		if (!head?.sign || !verify || !user_id) {
+			return decrypt_string_asymmetric(key, data, "");
+		}
+
+		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
 
 		return decrypt_string_asymmetric(key, data, verify_key);
 	}
