@@ -16,8 +16,8 @@ import init, {
 	prepare_login_start,
 	prepare_register, prepare_register_device_start,
 	refresh_jwt,
-	register, register_device_start,
-	user_fetch_public_data,
+	register,
+	register_device_start,
 	user_fetch_public_key,
 	user_fetch_verify_key
 } from "sentc_wasm";
@@ -477,50 +477,6 @@ export class Sentc
 	}
 
 	/**
-	 * Get from another user the public data.
-	 *
-	 * This is sued for inviting this user in a group or accepting the join request, because the public key is needed
-	 *
-	 * @param base_url
-	 * @param app_token
-	 * @param user_id
-	 */
-	public static async getUserPublicData(base_url: string, app_token: string, user_id: string): Promise<{
-		public_key: string,
-		verify_key: string,
-		public_key_id: string,
-		verify_key_id: string
-	}> {
-		const storage = await this.getStore();
-
-		const store_key = USER_KEY_STORAGE_NAMES.userPublicData + "_id_" + user_id;
-
-		const user = await storage.getItem(store_key);
-
-		if (user) {
-			return user;
-		}
-
-		const fetched_data = await user_fetch_public_data(base_url, app_token, user_id);
-
-		const public_key = fetched_data.get_public_key();
-		const public_key_id = fetched_data.get_public_key_id();
-		const verify_key = fetched_data.get_verify_key();
-		const verify_key_id = fetched_data.get_verify_key_id();
-
-		const returns = {
-			public_key,
-			public_key_id,
-			verify_key,
-			verify_key_id
-		};
-
-		await storage.set(store_key, returns);
-
-		return returns;
-	}
-
-	/**
 	 * The same as getUserPublicData but only fetched the public key
 	 *
 	 * @param base_url
@@ -557,12 +513,13 @@ export class Sentc
 	 * @param base_url
 	 * @param app_token
 	 * @param user_id
+	 * @param verify_key_id
 	 */
-	public static async getUserVerifyKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
+	public static async getUserVerifyKeyData(base_url: string, app_token: string, user_id: string, verify_key_id: string): Promise<string>
 	{
 		const storage = await this.getStore();
 
-		const store_key = USER_KEY_STORAGE_NAMES.userVerifyKey + "_id_" + user_id;
+		const store_key = USER_KEY_STORAGE_NAMES.userVerifyKey + "_id_" + user_id + "_key_id_" + verify_key_id;
 
 		const user = await storage.getItem(store_key);
 
@@ -570,15 +527,10 @@ export class Sentc
 			return user;
 		}
 
-		const fetched_data = await user_fetch_verify_key(base_url, app_token, user_id);
-
-		const key = fetched_data.get_verify_key();
-		const id = fetched_data.get_verify_key_id();
-
-		const returns = {key, id};
+		const key = await user_fetch_verify_key(base_url, app_token, user_id, verify_key_id);
 		
-		await storage.set(store_key, returns);
+		await storage.set(store_key, key);
 
-		return returns;
+		return key;
 	}
 }
