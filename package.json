@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
   "bugs": {
     "url": "https://gitlab.com/sentclose/sentc/sdk-implementations/sentc-javascript/issues"
   },
-  "homepage": "https://sentclose.com/",
+  "homepage": "https://sentc.com/",
   "main": "lib/index.js",
   "browser": "dist/sentc.min.js",
   "files": [
@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "idb": "^6.1.4",
-    "sentc_wasm": "0.4.1"
+    "sentc_wasm": "^0.4.2"
   },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "1.0.0",
