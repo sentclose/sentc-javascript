@@ -399,6 +399,16 @@ export class Sentc
 		throw new Error("No refresh option found");
 	}
 
+	public static getUserPublicKey(user_id: string)
+	{
+		return this.getUserPublicKeyData(this.options.base_url, this.options.app_token, user_id);
+	}
+
+	public static getUserVerifyKey(user_id: string, key_id: string)
+	{
+		return this.getUserVerifyKeyData(this.options.base_url, this.options.app_token, user_id, key_id);
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	/**
