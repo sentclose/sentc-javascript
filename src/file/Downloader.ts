@@ -108,6 +108,7 @@ export class Downloader
 			belongs_to: file_meta.get_belongs_to(),
 			belongs_to_type: file_meta.get_belongs_to_type(),
 			file_id: file_meta.get_file_id(),
+			master_key_id: file_meta.get_master_key_id(),
 			key_id: file_meta.get_key_id(),
 			part_list,
 			encrypted_file_name: file_meta.get_encrypted_file_name()
