@@ -1,10 +1,10 @@
-/** @var User */
+/** @type User */
 let user;
-/** @var User */
+/** @type User */
 let user_2;
-/** @var Group */
+/** @type Group */
 let group;
-/** @var Group */
+/** @type Group */
 let group_for_user_2;
 
 function prepareForm()
@@ -40,42 +40,42 @@ async function handleUpload()
 		console.log("Upload: " + progress);
 	};
 
-	const {file_id: file_id_1, master_key_id: master_key_id_1} = await user.createFile(file, false, "", get_progress);
+	const {file_id: file_id_1} = await user.createFile(file, false, "", get_progress);
 
 	console.log("_________________________________________");
 	console.log("download file for user");
 
-	await downloadFile(file_id_1, master_key_id_1, 0, 1);
+	await downloadFile(file_id_1, 0, 1);
 
 	console.log("_________________________________________");
 	console.log("file upload to other user");
 
-	const {file_id: file_id_2,  master_key_id: master_key_id_2} = await user.createFile(file, false, user_2.user_data.user_id, get_progress);
+	const {file_id: file_id_2} = await user.createFile(file, false, user_2.user_data.user_id, get_progress);
 
 	console.log("_________________________________________");
 	console.log("get file for the other user");
 
-	await downloadFile(file_id_2, master_key_id_2, 0, 2);
+	await downloadFile(file_id_2, 0, 2);
 
 	console.log("_________________________________________");
 	console.log("upload file for group");
 
-	const {file_id: file_id_3, master_key_id: master_key_id_3} = await group.createFile(file);
+	const {file_id: file_id_3} = await group.createFile(file);
 
 	console.log("_________________________________________");
 	console.log("download group file for user 1");
 
-	await downloadFile(file_id_3, master_key_id_3, 1);
+	await downloadFile(file_id_3, 1);
 
 	console.log("_________________________________________");
 	console.log("download group file for user 2");
 
-	await downloadFile(file_id_3, master_key_id_3, 2);
+	await downloadFile(file_id_3, 2);
 
 	console.log("_________________________________________");
 }
 
-async function downloadFile(file_id, master_key_id, group_for_user = 0, selected_user = 0)
+async function downloadFile(file_id, group_for_user = 0, selected_user = 0)
 {
 	const get_progress = (progress) => {
 		console.log("Download: " + progress);
@@ -84,19 +84,19 @@ async function downloadFile(file_id, master_key_id, group_for_user = 0, selected
 	let url, file_data, content_key;
 
 	if (group_for_user === 1) {
-		[url, file_data, content_key] = await group.downloadFile(file_id, master_key_id, "", get_progress);
+		[url, file_data, content_key] = await group.downloadFile(file_id, "", get_progress);
 	}
 
 	if (group_for_user === 2) {
-		[url, file_data, content_key] = await group_for_user_2.downloadFile(file_id, master_key_id, "", get_progress);
+		[url, file_data, content_key] = await group_for_user_2.downloadFile(file_id, "", get_progress);
 	}
 
 	if (selected_user === 1) {
-		[url, file_data, content_key] = await user.downloadFile(file_id, master_key_id, "", get_progress);
+		[url, file_data, content_key] = await user.downloadFile(file_id, "", get_progress);
 	}
 
 	if (selected_user === 2) {
-		[url, file_data, content_key] = await user_2.downloadFile(file_id, master_key_id, "", get_progress);
+		[url, file_data, content_key] = await user_2.downloadFile(file_id, "", get_progress);
 	}
 
 	const a = document.createElement("a");
