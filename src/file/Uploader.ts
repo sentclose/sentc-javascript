@@ -1,6 +1,7 @@
 import {User} from "../User";
 import {file_done_register_file, file_prepare_register_file, file_register_file, file_upload_part} from "sentc_wasm";
 import {FileHelper} from "./FileHelper";
+import {Sentc} from "../Sentc";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>
@@ -75,6 +76,8 @@ export class Uploader
 		//reset it just in case it was true
 		Uploader.cancel_upload = false;
 
+		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
+
 		while (start < file.size) {
 			++currentChunk;
 
@@ -88,7 +91,7 @@ export class Uploader
 			// eslint-disable-next-line no-await-in-loop
 			await file_upload_part(
 				this.base_url,
-				this.user.file_part_prefix_url,
+				url_prefix,
 				this.app_token,
 				jwt,
 				session_id,

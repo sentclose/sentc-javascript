@@ -61,7 +61,7 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_keys[0].group_key_id})
 	]);
 
-	return new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier, Sentc.options?.file_part_url);
+	return new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
 }
 
 export class User extends AbstractAsymCrypto
@@ -71,14 +71,9 @@ export class User extends AbstractAsymCrypto
 		app_token: string,
 		public user_data: UserData,
 		private userIdentifier: string,
-		public file_part_prefix_url?: string,
 		public group_invites: GroupInviteListItem[] = []
 	) {
 		super(base_url, app_token);
-
-		if (!file_part_prefix_url) {
-			this.file_part_prefix_url = "";
-		}
 	}
 
 	private async getUserKeys(key_id: string)

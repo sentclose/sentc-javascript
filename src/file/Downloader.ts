@@ -12,6 +12,7 @@ import {
 } from "sentc_wasm";
 import {User} from "../User";
 import {FileMetaInformation, PartListItem} from "../Enities";
+import {Sentc} from "../Sentc";
 
 export class Downloader
 {
@@ -145,10 +146,12 @@ export class Downloader
 
 		Downloader.cancel_download = false;
 
+		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
+
 		for (let i = 0; i < part_list.length; i++) {
 			const external = part_list[i].extern_storage === true;
 
-			const part_url_base = (external) ? this.user.file_part_prefix_url : "";
+			const part_url_base = (external) ? url_prefix : "";
 
 			let part;
 

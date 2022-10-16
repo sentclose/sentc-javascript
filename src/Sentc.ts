@@ -119,7 +119,8 @@ export class Sentc
 			base_url,
 			app_token: options?.app_token,
 			storage: {errCallBack},
-			refresh
+			refresh,
+			file_part_url: options?.file_part_url
 		};
 
 		try {
@@ -483,7 +484,7 @@ export class Sentc
 			return false;
 		}
 
-		return new User(this.options.base_url, this.options.app_token, user, userIdentifier, this.options.file_part_url);
+		return new User(this.options.base_url, this.options.app_token, user, userIdentifier);
 	}
 
 	/**
