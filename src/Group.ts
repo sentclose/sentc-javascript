@@ -780,7 +780,7 @@ export class Group extends AbstractSymCrypto
 
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
 
-		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key);
+		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key, key.master_key_id);
 
 		return {
 			server_input,
@@ -809,7 +809,7 @@ export class Group extends AbstractSymCrypto
 	{
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
 
-		return uploader.uploadFile(file, content_key.key, sign);
+		return uploader.uploadFile(file, content_key.key, content_key.master_key_id, sign);
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -830,7 +830,7 @@ export class Group extends AbstractSymCrypto
 		//2nd encrypt and upload the file, use the created key
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
 
-		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, sign);
+		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, key.master_key_id, sign);
 
 		return {
 			file_id,
@@ -839,13 +839,13 @@ export class Group extends AbstractSymCrypto
 		};
 	}
 
-	public downloadFile(file_id: string, master_key_id: string): Promise<[string, FileMetaInformation, SymKey]>;
+	public downloadFile(file_id: string): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
+	public downloadFile(file_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public downloadFile(file_id: string, master_key_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
+	public downloadFile(file_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public async downloadFile(file_id: string, master_key_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id);
 
@@ -854,7 +854,7 @@ export class Group extends AbstractSymCrypto
 
 		//2. get the content key which was used to encrypt the file
 		const key_id = file_meta.key_id;
-		const key = await this.fetchKey(key_id, master_key_id);
+		const key = await this.fetchKey(key_id, file_meta.master_key_id);
 
 		//3. get the file name if any
 		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {

@@ -156,6 +156,7 @@ export interface PartListItem {
 
 export interface FileMetaInformation {
 	file_id: string,
+	master_key_id: string,
 	belongs_to?: string,
 	belongs_to_type: any,
 	key_id: string,
