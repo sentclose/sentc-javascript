@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "idb": "^6.1.4",
-    "sentc_wasm": "^0.4.3"
+    "sentc_wasm": "^0.4.4"
   },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "1.0.0",
