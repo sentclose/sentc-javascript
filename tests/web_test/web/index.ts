@@ -210,7 +210,13 @@ export async function run()
 
 		console.log("finish key rotation for other device");
 
+		const old_newest_key = new_device.user_data.newest_key_id;
+
 		await new_device.finishKeyRotation();
+
+		const new_newest_key = new_device.user_data.newest_key_id;
+
+		console.log("after key rotation new newest key id: ", old_newest_key, new_newest_key);
 
 		console.log("___________________________________________________");
 		console.log("Log device out");

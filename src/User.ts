@@ -42,6 +42,7 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 	}
 
 	user_data.key_map = key_map;
+	user_data.newest_key_id = user_data.user_keys[0].group_key_id;
 
 	const store_user_data = user_data;
 
@@ -76,13 +77,13 @@ export class User extends AbstractAsymCrypto
 		super(base_url, app_token);
 	}
 
-	private async getUserKeys(key_id: string)
+	private async getUserKeys(key_id: string, first = false)
 	{
 		let index = this.user_data.key_map.get(key_id);
 
 		if (index === undefined) {
 			//try to fetch the keys from the server
-			await this.fetchUserKey(key_id);
+			await this.fetchUserKey(key_id, first);
 
 			index = this.user_data.key_map.get(key_id);
 
@@ -116,14 +117,25 @@ export class User extends AbstractAsymCrypto
 		return [public_key.key, public_key.id];
 	}
 
+	private getNewestKey()
+	{
+		let index = this.user_data.key_map.get(this.user_data.newest_key_id);
+
+		if (index === undefined) {
+			index = 0;
+		}
+
+		return this.user_data.user_keys[index];
+	}
+
 	public getNewestPublicKey()
 	{
-		return this.user_data.user_keys[0].public_key;
+		return this.getNewestKey().public_key;
 	}
 
 	public getNewestSignKey()
 	{
-		return this.user_data.user_keys[0].sign_key;
+		return this.getNewestKey().sign_key;
 	}
 
 	getSignKey(): Promise<string>
@@ -141,7 +153,7 @@ export class User extends AbstractAsymCrypto
 		this.user_data.key_map.set(user_keys.group_key_id, index);
 	}
 
-	public async fetchUserKey(key_id: string)
+	public async fetchUserKey(key_id: string, first = false)
 	{
 		const jwt = await this.getJwt();
 
@@ -151,6 +163,10 @@ export class User extends AbstractAsymCrypto
 		this.user_data.user_keys.push(user_keys);
 
 		this.user_data.key_map.set(user_keys.group_key_id, index);
+		
+		if (first) {
+			this.user_data.newest_key_id = user_keys.group_key_id;
+		}
 
 		const storage = await Sentc.getStore();
 
@@ -306,9 +322,9 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		const key_id = await user_key_rotation(this.base_url, this.app_token, jwt, this.user_data.device.public_key, this.user_data.user_keys[0].group_key);
+		const key_id = await user_key_rotation(this.base_url, this.app_token, jwt, this.user_data.device.public_key, this.getNewestKey().group_key);
 
-		return this.fetchUserKey(key_id);
+		return this.fetchUserKey(key_id, true);
 	}
 
 	public async finishKeyRotation()
@@ -347,7 +363,7 @@ export class User extends AbstractAsymCrypto
 				await user_finish_key_rotation(this.base_url, this.app_token, jwt, key.server_output, pre_key.group_key, public_key, private_key);
 
 				// eslint-disable-next-line no-await-in-loop
-				await this.getUserKeys(key.new_group_key_id);
+				await this.getUserKeys(key.new_group_key_id, true);
 			}
 
 			rounds_left--;

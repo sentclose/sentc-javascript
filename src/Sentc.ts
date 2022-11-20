@@ -315,7 +315,8 @@ export class Sentc
 			refresh_token: out.get_refresh_token(),
 			user_id: out.get_id(),
 			device_id: out.get_device_id(),
-			key_map: new Map()
+			key_map: new Map(),
+			newest_key_id: ""
 		};
 
 		return getUser(deviceIdentifier, user_data);
@@ -352,7 +353,8 @@ export class Sentc
 			refresh_token: out.get_refresh_token(),
 			user_id: out.get_id(),
 			device_id: out.get_device_id(),
-			key_map: new Map()
+			key_map: new Map(),
+			newest_key_id: ""
 		};
 
 		return getUser(deviceIdentifier, user_data);

@@ -42,7 +42,8 @@ export interface UserData
 {
 	device: UserDeviceKeyData,
 	user_keys: UserKeyData[],
-	key_map: Map<string, number>
+	key_map: Map<string, number>,
+	newest_key_id: string,
 
 	jwt: string,
 	refresh_token: string,
