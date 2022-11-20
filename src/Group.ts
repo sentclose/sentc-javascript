@@ -107,9 +107,23 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	//save the fetched keys but only decrypt them when creating the group obj
 	const fetched_keys: GroupOutDataKeys[] = out.get_keys();
 
+	//check parent or group as member access if the groups are already fetched
+	const access_by_parent_group = out.get_access_by_parent_group();
+	const access_by_group_as_member = out.get_access_by_group_as_member();
+
+	const parent_group_id = out.get_parent_group_id();
+	
+	if (access_by_parent_group) {
+		parent = true;
+		//check if the parent group is fetched
+		//rec here because the user might be in a parent of the parent group or so
+		//check the tree until we found the group where the user access by user
+		await getGroup(parent_group_id, base_url, app_token, user);
+	}
+
 	let group_data: GroupData = {
 		group_id: out.get_group_id(),
-		parent_group_id: out.get_parent_group_id(),
+		parent_group_id,
 		from_parent: parent,
 		rank: out.get_rank(),
 		key_update: out.get_key_update(),
@@ -117,7 +131,9 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		joined_time: out.get_joined_time(),
 		keys: [],
 		key_map: new Map(),
-		newest_key_id: ""
+		newest_key_id: "",
+		access_by_group_as_member,
+		access_by_parent_group
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);

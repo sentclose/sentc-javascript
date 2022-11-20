@@ -82,7 +82,9 @@ export interface GroupData
 	joined_time: string,
 	keys: GroupKey[],
 	key_map: Map<string, number>,	//save the index of the key to this key id
-	newest_key_id: string	//get the id of the newest group key
+	newest_key_id: string,	//get the id of the newest group key
+	access_by_parent_group: string | undefined,
+	access_by_group_as_member: string | undefined,
 }
 
 export interface GroupList
