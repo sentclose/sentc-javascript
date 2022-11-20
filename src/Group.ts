@@ -116,7 +116,8 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		create_time: out.get_created_time(),
 		joined_time: out.get_joined_time(),
 		keys: [],
-		key_map: new Map()
+		key_map: new Map(),
+		newest_key_id: ""
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
@@ -130,12 +131,17 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	const key_map: Map<string, number> = new Map();
 
+	//get the newest key
+	const newest_key_id = keys[0].group_key_id;
+
 	//insert in the key map
 	for (let i = 0; i < keys.length; i++) {
 		key_map.set(keys[i].group_key_id, i);
 	}
 	group_data.key_map = key_map;
+	group_data.newest_key_id = newest_key_id;
 	group_obj.groupKeyMap = key_map;
+	group_obj.data.newest_key_id = newest_key_id;
 
 	if (keys.length >= 50) {
 		//fetch the rest of the keys via pagination, get the updated data back
@@ -173,7 +179,7 @@ export class Group extends AbstractSymCrypto
 
 	public prepareCreateChildGroup()
 	{
-		const latest_key = this.data.keys[0];
+		const latest_key = this.getNewestKey();
 
 		const group_input = group_prepare_create_group(latest_key.public_group_key);
 
@@ -182,7 +188,7 @@ export class Group extends AbstractSymCrypto
 
 	public async createChildGroup()
 	{
-		const latest_key = this.data.keys[0].public_group_key;
+		const latest_key = this.getNewestKey().public_group_key;
 
 		const jwt = await this.user.getJwt();
 
@@ -414,11 +420,33 @@ export class Group extends AbstractSymCrypto
 				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
 			}
 
+			const newest_key_id = parent_group.newest_key_id;
+			const index = parent_group.key_map.get(newest_key_id);
+
+			if (index === undefined) {
+				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
+			}
+
 			//use the latest key
-			public_key = parent_group.keys[0].public_group_key;
+			public_key = parent_group.keys[index]?.public_group_key;
+			
+			if (!public_key) {
+				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
+			}
 		}
 
 		return public_key;
+	}
+
+	private getNewestKey()
+	{
+		let index = this.data.key_map.get(this.data.newest_key_id);
+
+		if (!index) {
+			index = 0;
+		}
+
+		return this.data.keys[index];
 	}
 
 	/**
@@ -481,7 +509,7 @@ export class Group extends AbstractSymCrypto
 		//if this is a child group -> start the key rotation with the parent key!
 		const public_key = await this.getPublicKey();
 
-		return group_prepare_key_rotation(this.data.keys[0].group_key, public_key);
+		return group_prepare_key_rotation(this.getNewestKey().group_key, public_key);
 	}
 
 	public async doneKeyRotation(server_output: string)
@@ -493,7 +521,7 @@ export class Group extends AbstractSymCrypto
 			this.getPrivateKey(out.encrypted_eph_key_key_id)
 		]);
 
-		return group_done_key_rotation(private_key, public_key, this.data.keys[0].group_key, server_output);
+		return group_done_key_rotation(private_key, public_key, this.getNewestKey().group_key, server_output);
 	}
 
 	public async keyRotation()
@@ -504,7 +532,7 @@ export class Group extends AbstractSymCrypto
 
 		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key);
 
-		return this.getGroupKey(key_id);
+		return this.getGroupKey(key_id, true);
 	}
 
 	public async finishKeyRotation()
@@ -560,7 +588,7 @@ export class Group extends AbstractSymCrypto
 				
 				//now get the new key and safe it
 				// eslint-disable-next-line no-await-in-loop
-				await this.getGroupKey(key.new_group_key_id);
+				await this.getGroupKey(key.new_group_key_id, true);
 			}
 
 			//when it runs 10 times and there are still left -> break up
@@ -704,7 +732,7 @@ export class Group extends AbstractSymCrypto
 		return prepareKeys(this.data.keys, page);
 	}
 
-	private async getGroupKey(key_id: string)
+	private async getGroupKey(key_id: string, new_keys = false)
 	{
 		let key_index = this.data.key_map.get(key_id);
 
@@ -723,6 +751,10 @@ export class Group extends AbstractSymCrypto
 			const last_inserted_key_index = this.data.keys.length;
 			this.data.keys.push(decrypted_key[0]);
 			this.data.key_map.set(decrypted_key[0].group_key_id, last_inserted_key_index);
+
+			if (new_keys) {
+				this.data.newest_key_id = decrypted_key[0].group_key_id;
+			}
 
 			const storage = await Sentc.getStore();
 			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
@@ -749,7 +781,7 @@ export class Group extends AbstractSymCrypto
 
 	getSymKeyToEncrypt(): Promise<[string, string]>
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
+		const latest_key = this.getNewestKey();
 
 		return Promise.resolve([latest_key.group_key, latest_key.group_key_id]);
 	}

@@ -94,8 +94,14 @@ export async function run()
 
 		console.log(group.data);
 
+		const old_newest_key = group_for_user_2.data.newest_key_id;
+
 		console.log("finish the key rotation for user 2");
 		await group_for_user_2.finishKeyRotation();
+
+		const new_newest_key = group_for_user_2.data.newest_key_id;
+
+		console.log("newest_key_id should be updated: ", old_newest_key, new_newest_key);
 
 		console.log("get group keys after rotation for user 2");
 

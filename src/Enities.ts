@@ -80,7 +80,8 @@ export interface GroupData
 	create_time: string,
 	joined_time: string,
 	keys: GroupKey[],
-	key_map: Map<string, number>	//save the index of the key to this key id
+	key_map: Map<string, number>,	//save the index of the key to this key id
+	newest_key_id: string	//get the id of the newest group key
 }
 
 export interface GroupList
