@@ -17,6 +17,7 @@ export async function run()
 
 	const username = "admin";
 	const username_2 = "admin1";
+	const username_3 = "admin2";
 	const pw = "hello";
 
 	console.log("prepare check username");
@@ -53,6 +54,11 @@ export async function run()
 	await Sentc.register(username_2, pw);
 
 	const user_2 = await Sentc.login(username_2, pw);
+
+	await Sentc.register(username_3, pw);
+
+	//3rd user to test get child group directly and if the keys of the parent are fetched
+	const user_3 = await Sentc.login(username_3, pw);
 
 	console.log("create and get group");
 
@@ -144,6 +150,13 @@ export async function run()
 	console.log(member_user_2);
 
 	try {
+		//auto invite other user after key rotation
+		await group.inviteAuto(user_3.user_data.user_id);
+	} catch (e) {
+		console.error(e);
+	}
+
+	try {
 		console.log("create and get child group");
 		
 		const child_group_id = await group.createChildGroup();
@@ -152,6 +165,10 @@ export async function run()
 		const child_group = await group.getChildGroup(child_group_id);
 
 		const child_group_user_2 = await group_for_user_2.getChildGroup(child_group_id);
+
+		console.log("test direct child group access");
+		//test here is the user can get the child group directly and the parent group is fetched too for this user
+		const child_group_user_3 = await user_3.getGroup(child_group_id);
 
 		console.log("key rotation in child group");
 		//done key rotation is not needed for the 2nd user because he got already the keys from parent
@@ -164,6 +181,10 @@ export async function run()
 		const decrypted_user_2 = await child_group_user_2.decryptString(encrypted_by_user_1);
 
 		console.log("encrypt result: ", decrypted_user_2);
+
+		const decrypted_user_3 = await child_group_user_3.decryptString(encrypted_by_user_1);
+
+		console.log("encrypt result: ", decrypted_user_3);
 
 		console.log("member of child group");
 		const member = await child_group.getMember();
@@ -266,6 +287,7 @@ export async function run()
 	console.log("user delete");
 	await user.deleteUser(pw);
 	await user_2.deleteUser(pw);
+	await user_3.deleteUser(pw);
 }
 
 (async () => {
