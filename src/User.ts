@@ -16,9 +16,9 @@ import {
 	file_delete_file,
 	file_file_name_update, get_user_devices,
 	group_accept_invite,
-	group_create_group,
+	group_create_group, group_delete_sent_join_req_user,
 	group_get_groups_for_user,
-	group_get_invites_for_user,
+	group_get_invites_for_user, group_get_sent_join_req_user,
 	group_join_req,
 	group_prepare_create_group,
 	group_reject_invite, prepare_register_device, register_device,
@@ -452,6 +452,35 @@ export class User extends AbstractAsymCrypto
 			this.app_token,
 			jwt,
 			group_id
+		);
+	}
+
+	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
+	{
+		const jwt = await this.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const out: GroupInviteListItem[] = await group_get_sent_join_req_user(
+			this.base_url,
+			this.app_token,
+			jwt,
+			last_fetched_time,
+			last_id
+		);
+
+		return out;
+	}
+
+	public async deleteJoinReq(id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return group_delete_sent_join_req_user(this.base_url,
+			this.app_token,
+			jwt,
+			id
 		);
 	}
 

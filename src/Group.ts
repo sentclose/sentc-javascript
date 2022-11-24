@@ -5,7 +5,7 @@
 import {
 	FileCreateOutput,
 	FileMetaInformation, FilePrepareCreateOutput,
-	GroupData,
+	GroupData, GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
@@ -41,7 +41,9 @@ import {
 	group_reject_join_req,
 	group_update_rank,
 	leave_group,
-	group_stop_group_invites
+	group_stop_group_invites,
+	group_get_sent_join_req,
+	group_delete_sent_join_req
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -657,6 +659,39 @@ export class Group extends AbstractSymCrypto
 		const jwt = await this.user.getJwt();
 
 		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank);
+	}
+
+	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
+	{
+		const jwt = await this.user.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const out: GroupInviteListItem[] = await group_get_sent_join_req(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			this.data.rank,
+			last_fetched_time,
+			last_id
+		);
+
+		return out;
+	}
+
+	public async deleteJoinReq(id: string)
+	{
+		const jwt = await this.user.getJwt();
+
+		return group_delete_sent_join_req(this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			this.data.rank,
+			id
+		);
 	}
 
 	//__________________________________________________________________________________________________________________
