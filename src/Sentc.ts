@@ -46,7 +46,10 @@ export interface SentcOptions {
 	app_token: string,
 	file_part_url?: string,
 	refresh?: RefreshOptions,
-	storage?: StorageOptions,
+	storage?: {
+		default_storage?: StorageOptions,
+		getStorage?: () => Promise<StorageInterface>
+	},
 	wasm_path?: InitInput | Promise<InitInput>
 }
 
@@ -69,7 +72,24 @@ export class Sentc
 			return this.storage;
 		}
 
-		this.storage = await StorageFactory.getStorage(this.options.storage.errCallBack, "sentclose", "keys");
+		if (this.options?.storage?.getStorage) {
+			this.storage = await this.options.storage.getStorage();
+
+			return this.storage;
+		}
+
+		let errCallBack: ResCallBack;
+
+		if (this.options?.storage?.default_storage) {
+			errCallBack = this.options.storage.default_storage.errCallBack;
+		} else {
+			errCallBack = ({err, warn}) => {
+				console.error(err);
+				console.warn(warn);
+			};
+		}
+
+		this.storage = await StorageFactory.getStorage(errCallBack, "sentclose", "keys");
 
 		this.init_storage = true;
 
@@ -99,17 +119,6 @@ export class Sentc
 
 		const base_url = options?.base_url ?? "https://api.sentc.com";
 
-		let errCallBack: ResCallBack;
-
-		if (options?.storage?.errCallBack) {
-			errCallBack = options?.storage?.errCallBack;
-		} else {
-			errCallBack = ({err, warn}) => {
-				console.error(err);
-				console.warn(warn);
-			};
-		}
-
 		const refresh: RefreshOptions = options?.refresh ?? {
 			endpoint: REFRESH_ENDPOINT.api,
 			endpoint_url: base_url + "/api/v1/refresh"
@@ -118,7 +127,7 @@ export class Sentc
 		Sentc.options = {
 			base_url,
 			app_token: options?.app_token,
-			storage: {errCallBack},
+			storage: options?.storage,
 			refresh,
 			file_part_url: options?.file_part_url
 		};
