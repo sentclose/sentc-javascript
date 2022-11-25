@@ -131,6 +131,7 @@ export interface GroupUserListItem {
 	user_id: string,
 	rank: number,
 	joined_time: number,
+	user_type: number
 }
 
 //______________________________________________________________________________________________________________________
