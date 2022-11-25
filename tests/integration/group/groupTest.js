@@ -343,6 +343,13 @@ describe("Group Test", () => {
 		}
 	});
 
+	it("should get the group public key", async function() {
+		const key = await sentc.getGroupPublicKey(group.data.group_id);
+
+		//should be the newest key
+		chai.assert.equal(key.id, group.data.newest_key_id);
+	});
+
 	//child group
 
 	after(async () => {

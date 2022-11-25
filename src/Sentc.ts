@@ -421,6 +421,11 @@ export class Sentc
 		return this.getUserVerifyKeyData(this.options.base_url, this.options.app_token, user_id, key_id);
 	}
 
+	public static getGroupPublicKey(group_id)
+	{
+		return this.getGroupPublicKeyData(this.options.base_url, this.options.app_token, group_id);
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	/**
