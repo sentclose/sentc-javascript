@@ -7,7 +7,7 @@ import init, {
 	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
-	done_register, done_register_device_start, generate_user_register_data,
+	done_register, done_register_device_start, generate_user_register_data, group_get_public_key_data,
 	init_user,
 	InitInput,
 	login,
@@ -554,5 +554,28 @@ export class Sentc
 		await storage.set(store_key, key);
 
 		return key;
+	}
+
+	public static async getGroupPublicKeyData(base_url: string, app_token: string, group_id: string): Promise<{key: string, id: string}>
+	{
+		const storage = await this.getStore();
+		const store_key = USER_KEY_STORAGE_NAMES.groupPublicKey + "_id_" + group_id;
+
+		const group = await storage.getItem(store_key);
+
+		if (group) {
+			return group;
+		}
+
+		const fetched_data = await group_get_public_key_data(base_url, app_token, group_id);
+
+		const key = fetched_data.get_public_key();
+		const id = fetched_data.get_public_key_id();
+
+		const returns = {key, id};
+
+		await storage.set(store_key, returns);
+
+		return returns;
 	}
 }

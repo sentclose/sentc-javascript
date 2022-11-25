@@ -8,11 +8,11 @@ export const enum USER_KEY_STORAGE_NAMES
 	userData = "user_data",
 	actualUser = "actual_user",
 
-	userPublicData = "user_public_data",
 	userPublicKey = "user_public_key",
 	userVerifyKey = "user_verify_key",
 
-	groupData = "group_data"
+	groupData = "group_data",
+	groupPublicKey = "group_public_key"
 }
 
 export interface UserKeyData
@@ -105,7 +105,8 @@ export interface GroupInviteListItem
 export interface GroupJoinReqListItem
 {
 	user_id: string,
-	time: number
+	time: number,
+	user_type: number
 }
 
 export interface GroupKeyRotationOut
