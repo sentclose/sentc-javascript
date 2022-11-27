@@ -2,14 +2,15 @@ describe("Group Test", () => {
 	const username0 = "test0";
 	const username1 = "test1";
 	const username2 = "test2";
+	const username3 = "test3";
 
 	const pw = "12345";
 
 	/** @type User */
-	let user0, user1, user2;
+	let user0, user1, user2, user3;
 
 	/** @type Group */
-	let group, group_for_user_1, group_for_user_2, child_group, child_group_user_2;
+	let group, group_for_user_1, group_for_user_2, child_group, child_group_user_2, child_group_user_3;
 
 	const sentc = window.Sentc.default;
 
@@ -32,6 +33,10 @@ describe("Group Test", () => {
 		await sentc.register(username2, pw);
 
 		user2 = await sentc.login(username2, pw);
+
+		await sentc.register(username3, pw);
+
+		user3 = await sentc.login(username3, pw);
 	});
 
 	it("should create a group", async function() {
@@ -352,6 +357,100 @@ describe("Group Test", () => {
 
 	//child group
 
+	it("should create a child group", async function() {
+		const id = await group.createChildGroup();
+		
+		child_group = await group.getChildGroup(id);
+	});
+
+	it("should get the child group as member of the parent group", async function() {
+		const group = await group_for_user_1.getChildGroup(child_group.data.group_id);
+
+		chai.assert.equal(child_group.data.newest_key_id, group.data.newest_key_id);
+	});
+
+	it("should invite a user to the child group", async function() {
+		await child_group.inviteAuto(user2.user_data.user_id);
+
+		child_group_user_2 = await user2.getGroup(child_group.data.group_id);
+	});
+
+	it("should get the child group by direct access", async function() {
+		//access the child group by user not by parent group -> the parent should be loaded too
+
+		//auto invite the user to the parent but do not fetch the parent keys!
+		await group.inviteAuto(user3.user_data.user_id);
+
+		//this should work because the parent is fetched before the child is fetched
+		child_group_user_3 = await user3.getGroup(child_group.data.group_id);
+
+		chai.assert.equal(child_group_user_3.data.newest_key_id, child_group.data.newest_key_id);
+	});
+
+	it("should test encrypt in child group", async function() {
+		const string = "hello there £ Я a a";
+
+		const encrypt = await child_group.encryptString(string);
+
+		//user 1 should decrypt it because he got access by the parent group
+		const child_1 = await group_for_user_1.getChildGroup(child_group.data.group_id);
+		const decrypt_1 = await child_1.decryptString(encrypt);
+
+		//user 2 got direct access to the child group
+		const decrypt_2 = await child_group_user_2.decryptString(encrypt);
+
+		//user3 fetched the child directly but has access from the parent too
+		const decrypt_3 = await child_group_user_3.decryptString(encrypt);
+
+		chai.assert.equal(string, decrypt_1);
+		chai.assert.equal(string, decrypt_2);
+		chai.assert.equal(string, decrypt_3);
+	});
+
+	//key rotation in child group
+	let new_key;
+
+	it("should start key rotation in child group", async function() {
+		const old_key = child_group.data.newest_key_id;
+
+		await child_group.keyRotation();
+
+		new_key = child_group.data.newest_key_id;
+
+		chai.assert.notEqual(old_key, new_key);
+	});
+
+	it("should finish the key rotation for the direct member", async function() {
+		const old_key = child_group_user_2.data.newest_key_id;
+
+		await child_group_user_2.finishKeyRotation();
+
+		const new_key_2 = child_group_user_2.data.newest_key_id;
+
+		chai.assert.notEqual(old_key, new_key_2);
+		chai.assert.equal(new_key, new_key_2);
+	});
+
+	it("should not get an error when try to finish an already finished rotation", async function() {
+		await child_group_user_3.finishKeyRotation();
+	});
+
+	it("should encrypt with the new key for child group", async function() {
+		const string = "hello there £ Я a a";
+
+		const encrypt = await child_group.encryptString(string);
+
+		//user 1 should decrypt it because he got access by the parent group
+		const child_1 = await group_for_user_1.getChildGroup(child_group.data.group_id);
+		const decrypt_1 = await child_1.decryptString(encrypt);
+
+		//user 2 got direct access to the child group
+		const decrypt_2 = await child_group_user_2.decryptString(encrypt);
+
+		chai.assert.equal(string, decrypt_1);
+		chai.assert.equal(string, decrypt_2);
+	});
+
 	after(async () => {
 		//clean up
 
@@ -360,5 +459,6 @@ describe("Group Test", () => {
 		await user0.deleteUser(pw);
 		await user1.deleteUser(pw);
 		await user2.deleteUser(pw);
+		await user3.deleteUser(pw);
 	});
 });
