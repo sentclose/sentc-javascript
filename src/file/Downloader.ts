@@ -63,9 +63,14 @@ export class Downloader
 		private base_url: string,
 		private app_token: string,
 		private user: User,
-		private group_id?: string
+		private group_id?: string,
+		private readonly group_as_member?: string
 	) {
 		//the base url can be different when serving the files from a different storage
+
+		if (!group_as_member) {
+			this.group_as_member = "";
+		}
 
 		Downloader.init();
 	}
@@ -85,7 +90,8 @@ export class Downloader
 			this.app_token,
 			jwt,
 			file_id,
-			this.group_id ? this.group_id : ""
+			this.group_id ? this.group_id : "",
+			this.group_as_member
 		);
 
 		const part_list: PartListItem[] = file_meta.get_part_list();

@@ -412,7 +412,9 @@ export class User extends AbstractAsymCrypto
 			this.app_token,
 			jwt,
 			last_fetched_time,
-			last_id
+			last_id,
+			"",
+			""
 		);
 
 		return out;
@@ -426,7 +428,9 @@ export class User extends AbstractAsymCrypto
 			this.base_url,
 			this.app_token,
 			jwt,
-			group_id
+			group_id,
+			"",
+			""
 		);
 	}
 
@@ -438,7 +442,9 @@ export class User extends AbstractAsymCrypto
 			this.base_url,
 			this.app_token,
 			jwt,
-			group_id
+			group_id,
+			"",
+			""
 		);
 	}
 
@@ -451,7 +457,9 @@ export class User extends AbstractAsymCrypto
 			this.base_url,
 			this.app_token,
 			jwt,
-			group_id
+			group_id,
+			"",
+			""
 		);
 	}
 
@@ -496,7 +504,7 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey());
+		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey(), "");
 	}
 
 	public getGroup(group_id: string)
@@ -627,6 +635,6 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return file_delete_file(this.base_url, this.app_token, jwt, file_id, "");
+		return file_delete_file(this.base_url, this.app_token, jwt, file_id, "", "");
 	}
 }
