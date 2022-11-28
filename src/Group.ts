@@ -43,7 +43,7 @@ import {
 	leave_group,
 	group_stop_group_invites,
 	group_get_sent_join_req,
-	group_delete_sent_join_req
+	group_delete_sent_join_req, group_get_invites_for_user, group_accept_invite, group_reject_invite, group_join_req
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -80,18 +80,26 @@ export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string
  * Get a group, from the storage or the server
  *
  */
-export async function getGroup(group_id: string, base_url: string, app_token: string, user: User, parent = false)
+export async function getGroup(group_id: string, base_url: string, app_token: string, user: User, parent = false, group_as_member = "", rek = false)
 {
 	const storage = await Sentc.getStore();
 
-	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user.user_data.user_id + "_id_" + group_id;
+	let user_id;
+
+	if (group_as_member === "") {
+		user_id = user.user_data.user_id;
+	} else {
+		user_id = group_as_member;
+	}
+
+	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user_id + "_id_" + group_id;
 
 	const group: GroupData = await storage.getItem(group_key);
 
 	const jwt = await user.getJwt();
 
 	if (group) {
-		const update = await group_get_group_updates(base_url, app_token, jwt, group_id);
+		const update = await group_get_group_updates(base_url, app_token, jwt, group_id, group_as_member);
 
 		group.rank = update.get_rank();
 		group.key_update = update.get_key_update();
@@ -103,7 +111,8 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		base_url,
 		app_token,
 		jwt,
-		group_id
+		group_id,
+		group_as_member
 	);
 
 	//save the fetched keys but only decrypt them when creating the group obj
@@ -111,16 +120,29 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	//check parent or group as member access if the groups are already fetched
 	const access_by_parent_group = out.get_access_by_parent_group();
-	const access_by_group_as_member = out.get_access_by_group_as_member();
+	let access_by_group_as_member = out.get_access_by_group_as_member();
 
 	const parent_group_id = out.get_parent_group_id();
-	
+
+	if (access_by_group_as_member && access_by_group_as_member !== "") {
+		//only load the group once even for rek. calls.
+		// otherwise when access_by_parent_group is also set this group will be checked again when loading the parent
+		if (!rek) {
+			//if group as member set. load this group first to get the keys
+			//no group as member flag
+			await getGroup(access_by_group_as_member, base_url, app_token, user);
+		}
+	} else {
+		//set the default value
+		access_by_group_as_member = "";
+	}
+
 	if (access_by_parent_group) {
 		parent = true;
 		//check if the parent group is fetched
 		//rec here because the user might be in a parent of the parent group or so
 		//check the tree until we found the group where the user access by user
-		await getGroup(parent_group_id, base_url, app_token, user);
+		await getGroup(parent_group_id, base_url, app_token, user, false, group_as_member, true);
 	}
 
 	let group_data: GroupData = {
@@ -192,7 +214,7 @@ export class Group extends AbstractSymCrypto
 
 	public getChildGroup(group_id: string)
 	{
-		return getGroup(group_id, this.base_url, this.app_token, this.user, true);
+		return getGroup(group_id, this.base_url, this.app_token, this.user, true, this.data.access_by_group_as_member);
 	}
 
 	public prepareCreateChildGroup()
@@ -210,8 +232,10 @@ export class Group extends AbstractSymCrypto
 
 		const jwt = await this.user.getJwt();
 
-		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank);
+		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
 	}
+
+	//TODO create connected group
 
 	public async getMember(last_fetched_item: GroupUserListItem | null = null)
 	{
@@ -226,7 +250,8 @@ export class Group extends AbstractSymCrypto
 			jwt,
 			this.data.group_id,
 			last_fetched_time,
-			last_id
+			last_id,
+			this.data.access_by_group_as_member
 		);
 
 		return list;
@@ -236,7 +261,7 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		return group_stop_group_invites(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank);
+		return group_stop_group_invites(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
 	}
 
 	public async prepareKeysForNewMember(user_id: string, page = 0)
@@ -260,9 +285,15 @@ export class Group extends AbstractSymCrypto
 		return this.inviteUserInternally(user_id, true);
 	}
 
-	private async inviteUserInternally(user_id: string, auto = false)
+	private async inviteUserInternally(user_id: string, auto = false, group = false)
 	{
-		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+		let public_key;
+
+		if (group) {
+			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+		} else {
+			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+		}
 
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeys();
@@ -278,8 +309,9 @@ export class Group extends AbstractSymCrypto
 			key_count,
 			this.data.rank,
 			auto,
+			group,
 			public_key.key,
-			key_string
+			key_string, this.data.access_by_group_as_member
 		);
 
 		if (session_id === "") {
@@ -303,7 +335,8 @@ export class Group extends AbstractSymCrypto
 				auto,
 				session_id,
 				public_key.key,
-				next_keys[0]
+				next_keys[0],
+				this.data.access_by_group_as_member
 			));
 
 			i++;
@@ -329,7 +362,8 @@ export class Group extends AbstractSymCrypto
 			this.data.group_id,
 			this.data.rank,
 			last_fetched_time,
-			last_id
+			last_id,
+			this.data.access_by_group_as_member
 		);
 
 		return reqs;
@@ -345,7 +379,8 @@ export class Group extends AbstractSymCrypto
 			jwt,
 			this.data.group_id,
 			this.data.rank,
-			user_id
+			user_id,
+			this.data.access_by_group_as_member
 		);
 	}
 
@@ -366,7 +401,8 @@ export class Group extends AbstractSymCrypto
 			key_count,
 			this.data.rank,
 			public_key.key,
-			key_string
+			key_string,
+			this.data.access_by_group_as_member
 		);
 
 		if (session_id === "") {
@@ -388,7 +424,8 @@ export class Group extends AbstractSymCrypto
 				this.data.group_id,
 				session_id,
 				public_key.key,
-				next_keys[0]
+				next_keys[0],
+				this.data.access_by_group_as_member
 			));
 
 			i++;
@@ -407,7 +444,8 @@ export class Group extends AbstractSymCrypto
 			this.base_url,
 			this.app_token,
 			jwt,
-			this.data.group_id
+			this.data.group_id,
+			this.data.access_by_group_as_member
 		);
 	}
 
@@ -424,14 +462,26 @@ export class Group extends AbstractSymCrypto
 	 */
 	private async getPublicKey()
 	{
-		let public_key;
+		//normal user access
+		if (!this.data.from_parent && (!this.data.access_by_group_as_member || this.data.access_by_group_as_member === "")) {
+			return this.user.getNewestPublicKey();
+		}
 
-		if (!this.data.from_parent) {
-			public_key = this.user.getNewestPublicKey();
-		} else {
+		//access with parent group -> get the keys from the parent group
+		//no need to change for group as member because we are using the keys of the parent
+		if (this.data.from_parent) {
+			//choose the right user id.
+			// when the user is accessing the group over a parent which is also access by a connected group
+			let user_id;
+			if (this.data.access_by_group_as_member === "") {
+				user_id = this.user.user_data.user_id;
+			} else {
+				user_id = this.data.access_by_group_as_member;
+			}
+
 			//get parent group public key
 			const storage = await Sentc.getStore();
-			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.parent_group_id;
+			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user_id + "_id_" + this.data.parent_group_id;
 			const parent_group: GroupData = await storage.getItem(parent_group_key);
 
 			if (!parent_group) {
@@ -446,11 +496,36 @@ export class Group extends AbstractSymCrypto
 			}
 
 			//use the latest key
-			public_key = parent_group.keys[index]?.public_group_key;
-			
+			const public_key = parent_group.keys[index]?.public_group_key;
+
 			if (!public_key) {
 				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
 			}
+
+			return public_key;
+		}
+
+		//access not over parent but from group as member -> use the keys from the group as member
+		const storage = await Sentc.getStore();
+		const connected_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.access_by_group_as_member;
+		const connected_group: GroupData = await storage.getItem(connected_group_key);
+
+		if (!connected_group) {
+			throw new Error("Connected group not found. This group was access from a connected group but the group data is gone.");
+		}
+
+		const newest_key_id = connected_group.newest_key_id;
+		const index = connected_group.key_map.get(newest_key_id);
+
+		if (index === undefined) {
+			throw new Error("Connected group not found. This group was access from a connected group but the group data is gone.");
+		}
+
+		//use the latest key
+		const public_key = connected_group.keys[index]?.public_group_key;
+
+		if (!public_key) {
+			throw new Error("Connected group not found. This group was access from a connected group but the group data is gone.");
 		}
 
 		return public_key;
@@ -479,25 +554,49 @@ export class Group extends AbstractSymCrypto
 	 */
 	private async getPrivateKey(private_key_id: string)
 	{
-		if (!this.data.from_parent) {
+		if (!this.data.from_parent && (!this.data.access_by_group_as_member || this.data.access_by_group_as_member === "")) {
 			return this.user.getPrivateKey(private_key_id);
 		}
 
-		//get parent group private key
-		const storage = await Sentc.getStore();
-		const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.parent_group_id;
-		const parent_group_data: GroupData = await storage.getItem(parent_group_key);
+		if (this.data.from_parent) {
+			let user_id;
+			if (this.data.access_by_group_as_member === "") {
+				user_id = this.user.user_data.user_id;
+			} else {
+				user_id = this.data.access_by_group_as_member;
+			}
 
-		if (!parent_group_data) {
-			throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
+			//get parent group private key
+			const storage = await Sentc.getStore();
+			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user_id + "_id_" + this.data.parent_group_id;
+			const parent_group_data: GroupData = await storage.getItem(parent_group_key);
+
+			if (!parent_group_data) {
+				throw new Error("Parent group not found. This group was access from parent group but the parent group data is gone.");
+			}
+
+			const parent_group = new Group(parent_group_data, this.base_url, this.app_token, this.user);
+
+			//private key id got the same id as the group key
+			const group_key = await parent_group.getGroupKey(private_key_id);
+
+			//use the latest key
+			return group_key.private_group_key;
 		}
 
-		const parent_group = new Group(parent_group_data, this.base_url, this.app_token, this.user);
+		//access over group as member
+		const storage = await Sentc.getStore();
+		const connected_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.access_by_group_as_member;
+		const connected_group_data: GroupData = await storage.getItem(connected_group_key);
 
-		//private key id got the same id as the group key
-		const group_key = await parent_group.getGroupKey(private_key_id);
+		if (!connected_group_data) {
+			throw new Error("Connected group not found. This group was access from a connected group but the group data is gone.");
+		}
 
-		//use the latest key
+		const connected_group = new Group(connected_group_data, this.base_url, this.app_token, this.user);
+
+		const group_key = await connected_group.getGroupKey(private_key_id);
+
 		return group_key.private_group_key;
 	}
 
@@ -548,7 +647,7 @@ export class Group extends AbstractSymCrypto
 
 		const public_key = await this.getPublicKey();
 
-		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key);
+		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key, this.data.access_by_group_as_member);
 
 		return this.getGroupKey(key_id, true);
 	}
@@ -557,7 +656,11 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id);
+		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, this.data.access_by_group_as_member);
+
+		if (keys.length === 0) {
+			return; 
+		}
 
 		let next_round = false;
 		let rounds_left = 10;
@@ -601,7 +704,8 @@ export class Group extends AbstractSymCrypto
 					key.server_output,
 					pre_key.group_key,
 					public_key,
-					private_key
+					private_key,
+					this.data.access_by_group_as_member
 				);
 				
 				//now get the new key and safe it
@@ -642,7 +746,7 @@ export class Group extends AbstractSymCrypto
 
 		//check if the updated user is the actual user -> then update the group store
 
-		await group_update_rank(this.base_url, this.app_token, jwt, this.data.group_id, user_id, new_rank, this.data.rank);
+		await group_update_rank(this.base_url, this.app_token, jwt, this.data.group_id, user_id, new_rank, this.data.rank, this.data.access_by_group_as_member);
 		
 		if (this.user.user_data.user_id === user_id) {
 			const storage = await Sentc.getStore();
@@ -658,7 +762,74 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank);
+		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank, this.data.access_by_group_as_member);
+	}
+
+	//__________________________________________________________________________________________________________________
+	//group as member
+
+	//join req to another group to connect
+	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
+	{
+		const jwt = await this.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const out: GroupInviteListItem[] = await group_get_invites_for_user(
+			this.base_url,
+			this.app_token,
+			jwt,
+			last_fetched_time,
+			last_id,
+			this.data.group_id,
+			this.data.access_by_group_as_member
+		);
+
+		return out;
+	}
+
+	public async acceptGroupInvite(group_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return group_accept_invite(
+			this.base_url,
+			this.app_token,
+			jwt,
+			group_id,
+			this.data.group_id,
+			this.data.access_by_group_as_member
+		);
+	}
+
+	public async rejectGroupInvite(group_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return group_reject_invite(
+			this.base_url,
+			this.app_token,
+			jwt,
+			group_id,
+			this.data.group_id,
+			this.data.access_by_group_as_member
+		);
+	}
+
+	//join req to another group
+	public async groupJoinRequest(group_id: string)
+	{
+		const jwt = await this.getJwt();
+
+		return group_join_req(
+			this.base_url,
+			this.app_token,
+			jwt,
+			group_id,
+			this.data.group_id,
+			this.data.access_by_group_as_member
+		);
 	}
 
 	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
@@ -675,7 +846,8 @@ export class Group extends AbstractSymCrypto
 			this.data.group_id,
 			this.data.rank,
 			last_fetched_time,
-			last_id
+			last_id,
+			this.data.access_by_group_as_member
 		);
 
 		return out;
@@ -690,7 +862,8 @@ export class Group extends AbstractSymCrypto
 			jwt,
 			this.data.group_id,
 			this.data.rank,
-			id
+			id,
+			this.data.access_by_group_as_member
 		);
 	}
 
@@ -700,7 +873,7 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		return group_delete_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank);
+		return group_delete_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -721,7 +894,8 @@ export class Group extends AbstractSymCrypto
 				jwt,
 				this.data.group_id,
 				last_item.time,
-				last_item.group_key_id
+				last_item.group_key_id,
+				this.data.access_by_group_as_member
 			);
 
 			// eslint-disable-next-line no-await-in-loop
@@ -790,7 +964,7 @@ export class Group extends AbstractSymCrypto
 		if (key_index === undefined) {
 			const jwt = await this.user.getJwt();
 
-			const fetched_key = await group_get_group_key(this.base_url, this.app_token, jwt, this.data.group_id, key_id);
+			const fetched_key = await group_get_group_key(this.base_url, this.app_token, jwt, this.data.group_id, key_id, this.data.access_by_group_as_member);
 
 			const key: GroupOutDataKeys = {
 				key_data: fetched_key.get_key_data(),
@@ -861,7 +1035,7 @@ export class Group extends AbstractSymCrypto
 	{
 		const key = await this.registerKey();
 
-		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
 		const [server_input, encrypted_file_name] =  uploader.prepareFileRegister(file, key.key, key.master_key_id);
 
@@ -875,7 +1049,7 @@ export class Group extends AbstractSymCrypto
 
 	public doneFileRegister(server_output: string)
 	{
-		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id);
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
 		uploader.doneFileRegister(server_output);
 	}
@@ -890,7 +1064,7 @@ export class Group extends AbstractSymCrypto
 
 	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
 	{
-		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback, this.data.access_by_group_as_member);
 
 		return uploader.uploadFile(file, content_key.key, content_key.master_key_id, sign);
 	}
@@ -911,7 +1085,7 @@ export class Group extends AbstractSymCrypto
 		const key = await this.registerKey();
 
 		//2nd encrypt and upload the file, use the created key
-		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback);
+		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback, this.data.access_by_group_as_member);
 
 		const [file_id, encrypted_file_name] = await uploader.uploadFile(file, key.key, key.master_key_id, sign);
 
@@ -930,7 +1104,7 @@ export class Group extends AbstractSymCrypto
 
 	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
-		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id);
+		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
 		//1. get the file info
 		const file_meta = await downloader.downloadFileMetaInformation(file_id);
@@ -957,6 +1131,6 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id);
+		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id, this.data.access_by_group_as_member);
 	}
 }
