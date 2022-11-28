@@ -727,9 +727,16 @@ export class Group extends AbstractSymCrypto
 			}
 		} while (next_round && rounds_left > 0);
 
+		let user_id;
+		if (this.data.access_by_group_as_member === "") {
+			user_id = this.user.user_data.user_id;
+		} else {
+			user_id = this.data.access_by_group_as_member;
+		}
+
 		//after a key rotation -> save the new group data in the store
 		const storage = await Sentc.getStore();
-		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
+		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user_id + "_id_" + this.data.group_id;
 		return storage.set(group_key, this.data);
 	}
 
@@ -747,10 +754,17 @@ export class Group extends AbstractSymCrypto
 		//check if the updated user is the actual user -> then update the group store
 
 		await group_update_rank(this.base_url, this.app_token, jwt, this.data.group_id, user_id, new_rank, this.data.rank, this.data.access_by_group_as_member);
-		
-		if (this.user.user_data.user_id === user_id) {
+
+		let actual_user_id;
+		if (this.data.access_by_group_as_member === "") {
+			actual_user_id = this.user.user_data.user_id;
+		} else {
+			actual_user_id = this.data.access_by_group_as_member;
+		}
+
+		if (actual_user_id === user_id) {
 			const storage = await Sentc.getStore();
-			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + actual_user_id + "_id_" + this.data.group_id;
 
 			this.data.rank = new_rank;
 
@@ -981,8 +995,15 @@ export class Group extends AbstractSymCrypto
 				this.data.newest_key_id = decrypted_key[0].group_key_id;
 			}
 
+			let actual_user_id;
+			if (this.data.access_by_group_as_member === "") {
+				actual_user_id = this.user.user_data.user_id;
+			} else {
+				actual_user_id = this.data.access_by_group_as_member;
+			}
+
 			const storage = await Sentc.getStore();
-			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + actual_user_id + "_id_" + this.data.group_id;
 
 			await storage.set(group_key, this.data);
 
