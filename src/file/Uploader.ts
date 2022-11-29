@@ -23,8 +23,13 @@ export class Uploader
 		private group_id?: string,
 		private other_user_id?: string,
 		private upload_callback?: (progress?: number) => void,
+		private readonly group_as_member?: string,
 		private chunk_size = 1024 * 1024 * 4
 	) {
+		if (!group_as_member) {
+			this.group_as_member = "";
+		}
+
 		if (group_id && group_id !== "") {
 			this.belongs_to_id = group_id;
 			this.belongs_to = "\"Group\"";	//the double "" are important for rust serde json
@@ -127,7 +132,8 @@ export class Uploader
 			this.belongs_to_id,
 			this.belongs_to,
 			file.name,
-			this.group_id ? this.group_id : ""
+			this.group_id ? this.group_id : "",
+			this.group_as_member
 		);
 
 		const session_id = out.get_session_id();
