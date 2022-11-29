@@ -43,7 +43,12 @@ import {
 	leave_group,
 	group_stop_group_invites,
 	group_get_sent_join_req,
-	group_delete_sent_join_req, group_get_invites_for_user, group_accept_invite, group_reject_invite, group_join_req
+	group_delete_sent_join_req,
+	group_get_invites_for_user,
+	group_accept_invite,
+	group_reject_invite,
+	group_join_req,
+	group_create_connected_group
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -217,6 +222,12 @@ export class Group extends AbstractSymCrypto
 		return getGroup(group_id, this.base_url, this.app_token, this.user, true, this.data.access_by_group_as_member);
 	}
 
+	public getConnectedGroup(group_id: string)
+	{
+		//access the connected group from this group
+		return getGroup(group_id, this.base_url, this.app_token, this.user, false, this.data.group_id);
+	}
+
 	public prepareCreateChildGroup()
 	{
 		const latest_key = this.getNewestKey();
@@ -235,7 +246,14 @@ export class Group extends AbstractSymCrypto
 		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
 	}
 
-	//TODO create connected group
+	public async createConnectedGroup()
+	{
+		const latest_key = this.getNewestKey().public_group_key;
+
+		const jwt = await this.user.getJwt();
+
+		return group_create_connected_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, latest_key, this.data.access_by_group_as_member);
+	}
 
 	public async getMember(last_fetched_item: GroupUserListItem | null = null)
 	{
@@ -264,11 +282,17 @@ export class Group extends AbstractSymCrypto
 		return group_stop_group_invites(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
 	}
 
-	public async prepareKeysForNewMember(user_id: string, page = 0)
+	public async prepareKeysForNewMember(user_id: string, page = 0, group = false)
 	{
 		const key_count = this.data.keys.length;
-		
-		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+
+		let public_key;
+
+		if (group) {
+			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+		} else {
+			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+		}
 
 		const [key_string] = this.prepareKeys(page);
 
@@ -283,6 +307,16 @@ export class Group extends AbstractSymCrypto
 	public inviteAuto(user_id: string)
 	{
 		return this.inviteUserInternally(user_id, true);
+	}
+
+	public inviteGroup(group_id: string)
+	{
+		return this.inviteUserInternally(group_id, false, true);
+	}
+
+	public inviteGroupAuto(group_id: string)
+	{
+		return this.inviteUserInternally(group_id, true, true);
 	}
 
 	private async inviteUserInternally(user_id: string, auto = false, group = false)
@@ -384,13 +418,19 @@ export class Group extends AbstractSymCrypto
 		);
 	}
 
-	public async acceptJoinRequest(user_id: string)
+	public async acceptJoinRequest(user_id: string, user_type: 0 | 2 = 0)
 	{
 		const jwt = await this.user.getJwt();
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeys();
 
-		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+		let public_key;
+
+		if (user_type === 2) {
+			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+		} else {
+			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+		}
 
 		const session_id = await group_accept_join_req(
 			this.base_url,
