@@ -507,9 +507,9 @@ export class User extends AbstractAsymCrypto
 		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey(), "");
 	}
 
-	public getGroup(group_id: string)
+	public getGroup(group_id: string, group_as_member = "")
 	{
-		return getGroup(group_id, this.base_url, this.app_token, this, false);
+		return getGroup(group_id, this.base_url, this.app_token, this, false, group_as_member);
 	}
 
 	//__________________________________________________________________________________________________________________
