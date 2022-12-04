@@ -359,7 +359,17 @@ describe("Group Test", () => {
 
 	it("should create a child group", async function() {
 		const id = await group.createChildGroup();
-		
+
+		//get the child in the list
+		const list = await group.getChildren();
+
+		chai.assert.equal(list.length, 1);
+		chai.assert.equal(list[0].group_id, id);
+
+		const pageTwo = await group.getChildren(list[0]);
+
+		chai.assert.equal(pageTwo.length, 0);
+
 		child_group = await group.getChildGroup(id);
 	});
 

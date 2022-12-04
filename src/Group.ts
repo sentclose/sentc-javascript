@@ -4,7 +4,7 @@
  */
 import {
 	FileCreateOutput,
-	FileMetaInformation, FilePrepareCreateOutput,
+	FileMetaInformation, FilePrepareCreateOutput, GroupChildrenListItem,
 	GroupData, GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
@@ -48,7 +48,7 @@ import {
 	group_accept_invite,
 	group_reject_invite,
 	group_join_req,
-	group_create_connected_group, group_get_groups_for_user
+	group_create_connected_group, group_get_groups_for_user, group_get_all_first_level_children
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -226,6 +226,26 @@ export class Group extends AbstractSymCrypto
 	{
 		//access the connected group from this group
 		return getGroup(group_id, this.base_url, this.app_token, this.user, false, this.data.group_id);
+	}
+
+	public async getChildren(last_fetched_item: GroupChildrenListItem | null = null)
+	{
+		const jwt = await this.user.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const list: GroupChildrenListItem[] = await group_get_all_first_level_children(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			last_fetched_time,
+			last_id,
+			this.data.access_by_group_as_member
+		);
+
+		return list;
 	}
 
 	public prepareCreateChildGroup()

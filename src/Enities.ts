@@ -134,6 +134,12 @@ export interface GroupUserListItem {
 	user_type: number
 }
 
+export interface GroupChildrenListItem {
+	group_id: string,
+	time: number,
+	parent?: string
+}
+
 //______________________________________________________________________________________________________________________
 
 export interface SignHead {
