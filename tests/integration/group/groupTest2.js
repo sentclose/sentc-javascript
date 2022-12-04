@@ -167,6 +167,16 @@ describe("Group test 2", () => {
 		chai.assert.equal(group_c.data.access_by_group_as_member, group1.data.group_id);
 	});
 
+	it("should get all connected groups where the group is member", async function() {
+		const list = await group1.getGroups();
+
+		chai.assert.equal(list.length, 1);
+
+		const pageTwo = await group1.getGroups(list[0]);
+
+		chai.assert.equal(pageTwo.length, 0);
+	});
+
 	//TODO test delete join req from sender
 	// and leave group as non group admin in the other group
 

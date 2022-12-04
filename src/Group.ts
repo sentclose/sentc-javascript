@@ -8,7 +8,7 @@ import {
 	GroupData, GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
-	GroupKeyRotationOut,
+	GroupKeyRotationOut, GroupList,
 	GroupOutDataKeys, GroupUserListItem,
 	KeyRotationInput,
 	USER_KEY_STORAGE_NAMES, UserKeyData
@@ -48,7 +48,7 @@ import {
 	group_accept_invite,
 	group_reject_invite,
 	group_join_req,
-	group_create_connected_group
+	group_create_connected_group, group_get_groups_for_user
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -821,6 +821,25 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 	//group as member
+
+	public async getGroups(last_fetched_item: GroupList | null = null)
+	{
+		const jwt = await this.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.group_id ?? "none";
+
+		const out: GroupList[] = await group_get_groups_for_user(
+			this.base_url,
+			this.app_token,
+			jwt,
+			last_fetched_time,
+			last_id,
+			this.data.group_id
+		);
+
+		return out;
+	}
 
 	//join req to another group to connect
 	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)

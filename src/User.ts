@@ -394,7 +394,8 @@ export class User extends AbstractAsymCrypto
 			this.app_token,
 			jwt,
 			last_fetched_time,
-			last_id
+			last_id,
+			""
 		);
 
 		return out;
