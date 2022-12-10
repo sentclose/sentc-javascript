@@ -707,7 +707,15 @@ export class Group extends AbstractSymCrypto
 
 		const public_key = await this.getPublicKey();
 
-		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[0].group_key, this.data.access_by_group_as_member);
+		const key_id = await group_key_rotation(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			public_key,
+			this.getNewestKey().group_key,
+			this.data.access_by_group_as_member
+		);
 
 		return this.getGroupKey(key_id, true);
 	}
