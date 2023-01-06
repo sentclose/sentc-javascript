@@ -141,6 +141,17 @@ export interface GroupChildrenListItem {
 	parent?: string
 }
 
+export interface KeyRotationStartServerOutput {
+	group_id: string,
+	key_id: string
+}
+
+export interface GroupDataCheckUpdateServerOutput
+{
+	key_update: boolean,
+	rank: number
+}
+
 //______________________________________________________________________________________________________________________
 
 export interface SignHead {

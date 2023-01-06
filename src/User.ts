@@ -18,9 +18,6 @@ import {
 	file_file_name_update,
 	get_user_devices,
 	group_create_group,
-	group_get_groups_for_user,
-	group_get_invites_for_user,
-	group_get_sent_join_req_user,
 	group_prepare_create_group,
 	prepare_register_device,
 	register_device,
@@ -35,7 +32,7 @@ import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
-import {handle_general_server_response, make_req} from "./core";
+import {handle_general_server_response, handle_server_response, make_req} from "./core";
 
 export async function getUser(deviceIdentifier: string, user_data: UserData)
 {
@@ -398,14 +395,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupList[] = await group_get_groups_for_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id,
-			""
-		);
+		const url = this.base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupList[] = handle_server_response(res);
 
 		return out;
 	}
@@ -417,15 +410,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupInviteListItem[] = await group_get_invites_for_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id,
-			"",
-			""
-		);
+		const url = this.base_url + "/api/v1/group/invite/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupInviteListItem[] = handle_server_response(res);
 
 		return out;
 	}
@@ -465,13 +453,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupInviteListItem[] = await group_get_sent_join_req_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id
-		);
+		const url = this.base_url + "/api/v1/group/joins/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupInviteListItem[] = handle_server_response(res);
 
 		return out;
 	}
