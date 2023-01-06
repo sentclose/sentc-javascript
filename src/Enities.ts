@@ -141,6 +141,17 @@ export interface GroupChildrenListItem {
 	parent?: string
 }
 
+export interface KeyRotationStartServerOutput {
+	group_id: string,
+	key_id: string
+}
+
+export interface GroupDataCheckUpdateServerOutput
+{
+	key_update: boolean,
+	rank: number
+}
+
 //______________________________________________________________________________________________________________________
 
 export interface SignHead {
@@ -167,6 +178,16 @@ export interface PartListItem {
 	extern_storage: boolean
 }
 
+export interface FileMetaFetched {
+	file_id: string,
+	master_key_id: string,
+	belongs_to?: string,
+	belongs_to_type: any,
+	key_id: string,
+	part_list: PartListItem[],
+	encrypted_file_name?: string
+}
+
 export interface FileMetaInformation {
 	file_id: string,
 	master_key_id: string,
@@ -191,4 +212,23 @@ export interface FileCreateOutput
 	file_id: string,
 	master_key_id: string,
 	encrypted_file_name: string
+}
+
+//______________________________________________________________________________________________________________________
+
+export interface ServerOutput<T> {
+	status: boolean,
+	err_msg?: string,
+	err_code?: number,
+	result?: T
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const enum HttpMethod
+{
+	GET = "GET",
+	POST = "POST",
+	PUT = "PUT",
+	PATCH = "PATCH",
+	DELETE = "DELETE",
 }

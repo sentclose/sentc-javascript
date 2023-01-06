@@ -3,32 +3,35 @@ import {
 	FileCreateOutput,
 	FileMetaInformation, FilePrepareCreateOutput,
 	GroupInviteListItem, GroupKeyRotationOut,
-	GroupList,
+	GroupList, HttpMethod,
 	USER_KEY_STORAGE_NAMES,
 	UserData, UserDeviceList, UserKeyData
 } from "./Enities";
 import {
 	change_password,
-	decode_jwt, delete_device,
+	decode_jwt,
+	delete_device,
 	delete_user,
 	done_fetch_user_key,
 	fetch_user_key,
 	file_delete_file,
-	file_file_name_update, get_user_devices,
-	group_accept_invite,
-	group_create_group, group_delete_sent_join_req_user,
-	group_get_groups_for_user,
-	group_get_invites_for_user, group_get_sent_join_req_user,
-	group_join_req,
+	file_file_name_update,
+	group_create_group,
 	group_prepare_create_group,
-	group_reject_invite, prepare_register_device, register_device,
+	prepare_register_device,
+	register_device,
 	reset_password,
-	update_user, user_device_key_session_upload, user_finish_key_rotation, user_key_rotation, user_pre_done_key_rotation
+	user_device_key_session_upload,
+	user_finish_key_rotation,
+	user_key_rotation,
+	user_pre_done_key_rotation,
+	user_prepare_user_identifier_update
 } from "sentc_wasm";
 import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
+import {handle_general_server_response, handle_server_response, make_req} from "./core";
 
 export async function getUser(deviceIdentifier: string, user_data: UserData)
 {
@@ -193,14 +196,16 @@ export class User extends AbstractAsymCrypto
 		return this.user_data.jwt;
 	}
 
-	public updateUser(newIdentifier: string)
+	public async updateUser(newIdentifier: string)
 	{
-		return update_user(
-			this.base_url,
-			this.app_token,
-			this.user_data.jwt,
-			newIdentifier
-		);
+		const jwt = await this.getJwt();
+
+		const url = this.base_url + "/api/v1/user";
+
+		const body = user_prepare_user_identifier_update(newIdentifier);
+
+		const res = await make_req(HttpMethod.PUT, url, this.app_token, body, jwt);
+		return handle_general_server_response(res);
 	}
 
 	public async resetPassword(newPassword: string)
@@ -311,7 +316,11 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.device_id ?? "none";
 
-		const out: UserDeviceList[] = await get_user_devices(this.base_url, this.app_token, jwt, last_fetched_time, last_id);
+
+		const url = this.base_url + "/api/v1/user/device/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: UserDeviceList[] = handle_server_response(res);
 
 		return out;
 	}
@@ -389,14 +398,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupList[] = await group_get_groups_for_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id,
-			""
-		);
+		const url = this.base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupList[] = handle_server_response(res);
 
 		return out;
 	}
@@ -408,15 +413,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupInviteListItem[] = await group_get_invites_for_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id,
-			"",
-			""
-		);
+		const url = this.base_url + "/api/v1/group/invite/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupInviteListItem[] = handle_server_response(res);
 
 		return out;
 	}
@@ -425,28 +425,18 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_accept_invite(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			"",
-			""
-		);
+		const url = this.base_url + "/api/v1/group/" + group_id + "/invite";
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, jwt);
+		return handle_general_server_response(res);
 	}
 
 	public async rejectGroupInvite(group_id: string)
 	{
 		const jwt = await this.getJwt();
 
-		return group_reject_invite(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			"",
-			""
-		);
+		const url = this.base_url + "/api/v1/group/" + group_id + "/invite";
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt);
+		return handle_general_server_response(res);
 	}
 
 	//join req
@@ -454,14 +444,9 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_join_req(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			"",
-			""
-		);
+		const url = this.base_url + "/api/v1/group/" + group_id + "/join_req";
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, jwt);
+		return handle_general_server_response(res);
 	}
 
 	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
@@ -471,13 +456,10 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.group_id ?? "none";
 
-		const out: GroupInviteListItem[] = await group_get_sent_join_req_user(
-			this.base_url,
-			this.app_token,
-			jwt,
-			last_fetched_time,
-			last_id
-		);
+		const url = this.base_url + "/api/v1/group/joins/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: GroupInviteListItem[] = handle_server_response(res);
 
 		return out;
 	}
@@ -486,11 +468,9 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_delete_sent_join_req_user(this.base_url,
-			this.app_token,
-			jwt,
-			id
-		);
+		const url = this.base_url + "/api/v1/group/joins/" + id;
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt);
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________
