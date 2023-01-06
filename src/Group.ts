@@ -299,7 +299,7 @@ export class Group extends AbstractSymCrypto
 	public async stopInvites()
 	{
 		if (this.data.rank > 1) {
-			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+			throw create_error("client_201", "No permission to fulfill this action");
 		}
 
 		const jwt = await this.user.getJwt();
@@ -433,7 +433,7 @@ export class Group extends AbstractSymCrypto
 	public async rejectJoinRequest(user_id: string)
 	{
 		if (this.data.rank > 2) {
-			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+			throw create_error("client_201", "No permission to fulfill this action");
 		}
 
 		const jwt = await this.user.getJwt();
@@ -848,6 +848,10 @@ export class Group extends AbstractSymCrypto
 
 	public async kickUser(user_id: string)
 	{
+		if (this.data.rank > 2) {
+			throw create_error("client_201", "No permission to fulfill this action");
+		}
+
 		const jwt = await this.user.getJwt();
 
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/kick/" + user_id;
@@ -958,7 +962,7 @@ export class Group extends AbstractSymCrypto
 	public async deleteJoinReq(id: string)
 	{
 		if (this.data.rank > 1) {
-			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+			throw create_error("client_201", "No permission to fulfill this action");
 		}
 		
 		const jwt = await this.user.getJwt();
@@ -975,7 +979,7 @@ export class Group extends AbstractSymCrypto
 	public async deleteGroup()
 	{
 		if (this.data.rank > 1) {
-			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+			throw create_error("client_201", "No permission to fulfill this action");
 		}
 		
 		const jwt = await this.user.getJwt();

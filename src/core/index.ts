@@ -16,23 +16,23 @@ export function handle_server_response<T>(res: string)
 	try {
 		server_output = JSON.parse(res);
 	} catch (e) {
-		throw new Error(create_error("client_101", e?.message ?? "Cannot create an object from the input string"));
+		throw create_error("client_101", e?.message ?? "Cannot create an object from the input string");
 	}
 
 	if (!server_output.status) {
 		if (!server_output?.err_code) {
-			throw new Error(create_error("client_101", "Cannot create an object from the input string"));
+			throw create_error("client_101", "Cannot create an object from the input string");
 		}
 
 		if (!server_output?.err_msg) {
-			throw new Error(create_error("client_101", "Cannot create an object from the input string"));
+			throw create_error("client_101", "Cannot create an object from the input string");
 		}
 		
-		throw new Error(create_error("server_" + server_output.err_code, server_output.err_msg));
+		throw create_error("server_" + server_output.err_code, server_output.err_msg);
 	}
 
 	if (!server_output.result) {
-		throw new Error(create_error("client_101", "Cannot create an object from the input string"));
+		throw create_error("client_101", "Cannot create an object from the input string");
 	}
 
 	return server_output.result;
@@ -46,7 +46,7 @@ export function handle_general_server_response(res: string) {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export function create_error(status: string, msg: string)
 {
-	return `{"status": ${status}, "error_message": ${msg}`;
+	return `{"status": "${status}", "error_message": "${msg}"}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -71,7 +71,7 @@ export async function make_req(
 	};
 
 	if (jwt) {
-		headers["Authorization"] = jwt;
+		headers["Authorization"] = "Bearer " + jwt;
 	}
 
 	if (group_as_member) {
@@ -88,12 +88,12 @@ export async function make_req(
 			body
 		});
 	} catch (e) {
-		throw new Error(create_error("client_1000", `Can't send the request: ${e?.message ?? "Request failed"}`));
+		throw create_error("client_1000", `Can't send the request: ${e?.message ?? "Request failed"}`);
 	}
 
 	try {
 		return await res.text();
 	} catch (e) {
-		throw new Error(create_error("client_1002", `Can't decode the response to text: ${e?.message ?? "Request failed"}`));
+		throw create_error("client_1002", `Can't decode the response to text: ${e?.message ?? "Request failed"}`);
 	}
 }
