@@ -85,6 +85,7 @@ export interface GroupData
 	newest_key_id: string,	//get the id of the newest group key
 	access_by_parent_group: string | undefined,
 	access_by_group_as_member: string | "", //empty string -> access directly
+	is_connected_group: boolean
 }
 
 export interface GroupList

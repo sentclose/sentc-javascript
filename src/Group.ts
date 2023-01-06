@@ -162,7 +162,8 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		key_map: new Map(),
 		newest_key_id: "",
 		access_by_group_as_member,
-		access_by_parent_group
+		access_by_parent_group,
+		is_connected_group: out.get_is_connected_group()
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
