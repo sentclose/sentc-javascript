@@ -4,57 +4,57 @@
  */
 import {
 	FileCreateOutput,
-	FileMetaInformation, FilePrepareCreateOutput, GroupChildrenListItem,
-	GroupData, GroupInviteListItem,
+	FileMetaInformation,
+	FilePrepareCreateOutput,
+	GroupChildrenListItem,
+	GroupData,
+	GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
-	GroupKeyRotationOut, GroupList,
-	GroupOutDataKeys, GroupUserListItem,
+	GroupKeyRotationOut,
+	GroupList,
+	GroupOutDataKeys,
+	GroupUserListItem,
+	HttpMethod,
 	KeyRotationInput,
-	USER_KEY_STORAGE_NAMES, UserKeyData
+	USER_KEY_STORAGE_NAMES,
+	UserKeyData
 } from "./Enities";
 import {
 	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
+	group_create_connected_group,
 	group_decrypt_key,
-	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
+	group_get_all_first_level_children,
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
 	group_get_group_key,
 	group_get_group_keys,
 	group_get_group_updates,
+	group_get_groups_for_user,
+	group_get_invites_for_user,
 	group_get_join_reqs,
 	group_get_member,
+	group_get_sent_join_req,
 	group_invite_user,
 	group_invite_user_session,
 	group_join_user_session,
 	group_key_rotation,
-	group_kick_user,
 	group_pre_done_key_rotation,
 	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_prepare_update_rank,
-	group_reject_join_req,
-	group_update_rank,
-	leave_group,
-	group_stop_group_invites,
-	group_get_sent_join_req,
-	group_delete_sent_join_req,
-	group_get_invites_for_user,
-	group_accept_invite,
-	group_reject_invite,
-	group_join_req,
-	group_create_connected_group, group_get_groups_for_user, group_get_all_first_level_children
+	group_prepare_update_rank
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
+import {create_error, handle_general_server_response, make_req} from "./core";
 
 export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string, boolean]
 {
@@ -298,9 +298,15 @@ export class Group extends AbstractSymCrypto
 
 	public async stopInvites()
 	{
+		if (this.data.rank > 1) {
+			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+		}
+
 		const jwt = await this.user.getJwt();
 
-		return group_stop_group_invites(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/change_invite";
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+		return handle_general_server_response(res);
 	}
 
 	public async prepareKeysForNewMember(user_id: string, page = 0, group = false)
@@ -426,17 +432,15 @@ export class Group extends AbstractSymCrypto
 
 	public async rejectJoinRequest(user_id: string)
 	{
-		const jwt = await this.user.getJwt();
+		if (this.data.rank > 2) {
+			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+		}
 
-		return group_reject_join_req(
-			this.base_url,
-			this.app_token,
-			jwt,
-			this.data.group_id,
-			this.data.rank,
-			user_id,
-			this.data.access_by_group_as_member
-		);
+		const jwt = await this.user.getJwt();
+		
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/join_req/" + user_id;
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+		return handle_general_server_response(res);
 	}
 
 	public async acceptJoinRequest(user_id: string, user_type: 0 | 2 = 0)
@@ -501,13 +505,9 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		return leave_group(
-			this.base_url,
-			this.app_token,
-			jwt,
-			this.data.group_id,
-			this.data.access_by_group_as_member
-		);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/leave";
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -822,8 +822,13 @@ export class Group extends AbstractSymCrypto
 
 		//check if the updated user is the actual user -> then update the group store
 
-		await group_update_rank(this.base_url, this.app_token, jwt, this.data.group_id, user_id, new_rank, this.data.rank, this.data.access_by_group_as_member);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/change_rank";
 
+		const body = this.prepareUpdateRank(user_id, new_rank);
+		const res = await make_req(HttpMethod.PUT, url, this.app_token, body, jwt, this.data.access_by_group_as_member);
+
+		handle_general_server_response(res);
+		
 		let actual_user_id;
 		if (this.data.access_by_group_as_member === "") {
 			actual_user_id = this.user.user_data.user_id;
@@ -845,7 +850,11 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank, this.data.access_by_group_as_member);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/kick/" + user_id;
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -895,28 +904,22 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_accept_invite(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			this.data.group_id,
-			this.data.access_by_group_as_member
-		);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/" + group_id + "/invite";
+
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	public async rejectGroupInvite(group_id: string)
 	{
 		const jwt = await this.getJwt();
 
-		return group_reject_invite(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			this.data.group_id,
-			this.data.access_by_group_as_member
-		);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/" + group_id + "/invite";
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	//join req to another group
@@ -924,14 +927,11 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_join_req(
-			this.base_url,
-			this.app_token,
-			jwt,
-			group_id,
-			this.data.group_id,
-			this.data.access_by_group_as_member
-		);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/join_req/" + group_id;
+
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
@@ -957,25 +957,34 @@ export class Group extends AbstractSymCrypto
 
 	public async deleteJoinReq(id: string)
 	{
+		if (this.data.rank > 1) {
+			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+		}
+		
 		const jwt = await this.user.getJwt();
 
-		return group_delete_sent_join_req(this.base_url,
-			this.app_token,
-			jwt,
-			this.data.group_id,
-			this.data.rank,
-			id,
-			this.data.access_by_group_as_member
-		);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/joins/" + id;
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________
 
 	public async deleteGroup()
 	{
+		if (this.data.rank > 1) {
+			throw new Error(create_error("client_201", "No permission to fulfill this action"));
+		}
+		
 		const jwt = await this.user.getJwt();
 
-		return group_delete_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id;
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+		
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________

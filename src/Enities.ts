@@ -192,3 +192,22 @@ export interface FileCreateOutput
 	master_key_id: string,
 	encrypted_file_name: string
 }
+
+//______________________________________________________________________________________________________________________
+
+export interface ServerOutput<T> {
+	status: boolean,
+	err_msg?: string,
+	err_code?: number,
+	result?: T
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const enum HttpMethod
+{
+	GET = "GET",
+	POST = "POST",
+	PUT = "PUT",
+	PATCH = "PATCH",
+	DELETE = "DELETE",
+}
