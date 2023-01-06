@@ -16,7 +16,6 @@ import {
 	fetch_user_key,
 	file_delete_file,
 	file_file_name_update,
-	get_user_devices,
 	group_create_group,
 	group_prepare_create_group,
 	prepare_register_device,
@@ -317,7 +316,11 @@ export class User extends AbstractAsymCrypto
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.device_id ?? "none";
 
-		const out: UserDeviceList[] = await get_user_devices(this.base_url, this.app_token, jwt, last_fetched_time, last_id);
+
+		const url = this.base_url + "/api/v1/user/device/" + last_fetched_time + "/" + last_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const out: UserDeviceList[] = handle_server_response(res);
 
 		return out;
 	}
