@@ -3,15 +3,13 @@
  * @since 2022/08/27
  */
 import {Mutex} from "./Mutex";
-import {StorageFactory, StorageInterface} from "../core";
+import {handle_server_response, make_req, StorageFactory, StorageInterface} from "../core";
 import {
 	decrypt_string_symmetric,
-	file_download_and_decrypt_file_part,
-	file_download_file_meta,
-	file_download_part_list
+	file_download_and_decrypt_file_part
 } from "sentc_wasm";
 import {User} from "../User";
-import {FileMetaInformation, PartListItem} from "../Enities";
+import {FileMetaFetched, FileMetaInformation, HttpMethod, PartListItem} from "../Enities";
 import {Sentc} from "../Sentc";
 
 export class Downloader
@@ -84,17 +82,19 @@ export class Downloader
 	{
 		const jwt = await this.user.getJwt();
 
-		//make a req to get the file info
-		const file_meta = await file_download_file_meta(
-			this.base_url,
-			this.app_token,
-			jwt,
-			file_id,
-			this.group_id ? this.group_id : "",
-			this.group_as_member
-		);
+		let url;
 
-		const part_list: PartListItem[] = file_meta.get_part_list();
+		if (this.group_id) {
+			url = this.base_url + "/api/v1/group/" + this.group_id + "/file/" + file_id;
+		} else {
+			url = this.base_url + "/api/v1/file/" + file_id;
+		}
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.group_as_member);
+
+		const file_meta: FileMetaFetched = handle_server_response(res);
+
+		const part_list = file_meta.part_list;
 
 		if (part_list.length >= 500) {
 			//download parts via pagination
@@ -112,13 +112,13 @@ export class Downloader
 		}
 
 		return {
-			belongs_to: file_meta.get_belongs_to(),
-			belongs_to_type: file_meta.get_belongs_to_type(),
-			file_id: file_meta.get_file_id(),
-			master_key_id: file_meta.get_master_key_id(),
-			key_id: file_meta.get_key_id(),
+			belongs_to: file_meta.belongs_to,
+			belongs_to_type: file_meta.belongs_to_type,
+			file_id: file_meta.file_id,
+			master_key_id: file_meta.master_key_id,
+			key_id: file_meta.key_id,
 			part_list,
-			encrypted_file_name: file_meta.get_encrypted_file_name()
+			encrypted_file_name: file_meta.encrypted_file_name
 		};
 	}
 
@@ -128,11 +128,15 @@ export class Downloader
 	 * @param file_id
 	 * @param last_item
 	 */
-	public downloadFilePartList(file_id: string, last_item: PartListItem | null = null): Promise<PartListItem[]>
+	public async downloadFilePartList(file_id: string, last_item: PartListItem | null = null): Promise<PartListItem[]>
 	{
 		const last_seq = last_item?.sequence + "" ?? "";
 
-		return file_download_part_list(this.base_url, this.app_token, file_id, last_seq);
+		const url = this.base_url + "/api/v1/file/" + file_id + "/part_fetch/" + last_seq;
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token);
+
+		return handle_server_response(res);
 	}
 
 	public downloadFileParts(part_list: PartListItem[], content_key: string): Promise<string>;
