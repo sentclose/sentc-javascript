@@ -24,7 +24,7 @@ import {
 	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
-	group_create_connected_group,
+	group_create_connected_group, group_decrypt_hmac_key,
 	group_decrypt_key,
 	group_done_key_rotation,
 	group_finish_key_rotation,
@@ -157,7 +157,8 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		newest_key_id: "",
 		access_by_group_as_member,
 		access_by_parent_group,
-		is_connected_group: out.get_is_connected_group()
+		is_connected_group: out.get_is_connected_group(),
+		hmac_key: ""
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
@@ -187,6 +188,17 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		//fetch the rest of the keys via pagination, get the updated data back
 		group_data = await group_obj.fetchKeys(jwt);
 	}
+
+	//now decrypt the hmac key for searchable encryption, the right key must be fetched before
+	const hmac_key = out.get_encrypted_hmac_key();
+	const hmac_alg = out.get_encrypted_hmac_alg();
+	const hmac_id = out.get_encrypted_hmac_encryption_key_id();
+
+	const hmac_encrypted_key = await group_obj.getSymKeyById(hmac_id);
+	const decrypted_hmac_key = group_decrypt_hmac_key(hmac_encrypted_key, hmac_key, hmac_alg);
+
+	group_obj.data.hmac_key = decrypted_hmac_key;
+	group_data.hmac_key = decrypted_hmac_key;
 
 	//store the group data
 	await storage.set(group_key, group_data);

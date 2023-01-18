@@ -16,7 +16,7 @@ import {
 	fetch_user_key,
 	file_delete_file,
 	file_file_name_update,
-	group_create_group,
+	group_create_group, group_decrypt_hmac_key,
 	group_prepare_create_group,
 	prepare_register_device,
 	register_device,
@@ -55,6 +55,15 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 		store_user_data.refresh_token = "";
 	}
 
+	const user = new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
+
+	//decrypt the hmac key
+	const hmac_encrypted_key = await user.getUserSymKey(user_data.encrypted_hmac_encryption_key_id);
+	const decrypted_hmac_key = group_decrypt_hmac_key(hmac_encrypted_key, user_data.encrypted_hmac_key, user_data.encrypted_hmac_alg);
+	
+	user.user_data.hmac_key = decrypted_hmac_key;
+	store_user_data.hmac_key = decrypted_hmac_key;
+
 	//save user data in indexeddb
 	const storage = await Sentc.getStore();
 
@@ -65,7 +74,7 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_keys[0].group_key_id})
 	]);
 
-	return new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
+	return user;
 }
 
 export class User extends AbstractAsymCrypto
@@ -104,6 +113,13 @@ export class User extends AbstractAsymCrypto
 		}
 
 		return key;
+	}
+
+	async getUserSymKey(key_id: string): Promise<string>
+	{
+		const key = await this.getUserKeys(key_id);
+
+		return key.group_key;
 	}
 
 	async getPrivateKey(key_id: string): Promise<string>

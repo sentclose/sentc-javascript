@@ -325,7 +325,11 @@ export class Sentc
 			user_id: out.get_id(),
 			device_id: out.get_device_id(),
 			key_map: new Map(),
-			newest_key_id: ""
+			newest_key_id: "",
+			encrypted_hmac_key: out.get_encrypted_hmac_key(),
+			encrypted_hmac_alg: out.get_encrypted_hmac_alg(),
+			encrypted_hmac_encryption_key_id: out.get_encrypted_hmac_encryption_key_id(),
+			hmac_key: ""
 		};
 
 		return getUser(deviceIdentifier, user_data);
@@ -363,7 +367,11 @@ export class Sentc
 			user_id: out.get_id(),
 			device_id: out.get_device_id(),
 			key_map: new Map(),
-			newest_key_id: ""
+			newest_key_id: "",
+			encrypted_hmac_key: out.get_encrypted_hmac_key(),
+			encrypted_hmac_alg: out.get_encrypted_hmac_alg(),
+			encrypted_hmac_encryption_key_id: out.get_encrypted_hmac_encryption_key_id(),
+			hmac_key: ""
 		};
 
 		return getUser(deviceIdentifier, user_data);
