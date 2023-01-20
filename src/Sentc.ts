@@ -19,9 +19,17 @@ import init, {
 	register,
 	register_device_start,
 	user_fetch_public_key,
-	user_fetch_verify_key
+	user_fetch_verify_key,
+	UserData as WasmUserData
 } from "sentc_wasm";
-import {USER_KEY_STORAGE_NAMES, UserData, UserDeviceKeyData, UserId, UserKeyData} from "./Enities";
+import {
+	GroupOutDataHmacKeys,
+	USER_KEY_STORAGE_NAMES,
+	UserData,
+	UserDeviceKeyData,
+	UserId,
+	UserKeyData
+} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
 
@@ -306,6 +314,11 @@ export class Sentc
 	{
 		const out = done_login(master_key_encryption_key, done_login_server_output);
 
+		return this.buildUserObj(deviceIdentifier, out);
+	}
+
+	private static buildUserObj(deviceIdentifier: string, out: WasmUserData)
+	{
 		const device: UserDeviceKeyData = {
 			private_key: out.get_device_private_key(),
 			public_key: out.get_device_public_key(),
@@ -317,6 +330,8 @@ export class Sentc
 
 		const user_keys: UserKeyData[] = out.get_user_keys();
 
+		const hmac_keys: GroupOutDataHmacKeys[] = out.get_hmac_keys();
+
 		const user_data: UserData = {
 			device,
 			user_keys,
@@ -326,13 +341,10 @@ export class Sentc
 			device_id: out.get_device_id(),
 			key_map: new Map(),
 			newest_key_id: "",
-			encrypted_hmac_key: out.get_encrypted_hmac_key(),
-			encrypted_hmac_alg: out.get_encrypted_hmac_alg(),
-			encrypted_hmac_encryption_key_id: out.get_encrypted_hmac_encryption_key_id(),
-			hmac_key: ""
+			hmac_keys: []
 		};
 
-		return getUser(deviceIdentifier, user_data);
+		return getUser(deviceIdentifier, user_data, hmac_keys);
 	}
 
 	/**
@@ -348,33 +360,7 @@ export class Sentc
 	{
 		const out = await login(Sentc.options.base_url, Sentc.options.app_token, deviceIdentifier, password);
 
-		const device: UserDeviceKeyData = {
-			private_key: out.get_device_private_key(),
-			public_key: out.get_device_public_key(),
-			sign_key: out.get_device_sign_key(),
-			verify_key: out.get_device_verify_key(),
-			exported_public_key: out.get_device_exported_public_key(),
-			exported_verify_key: out.get_device_exported_verify_key()
-		};
-		
-		const user_keys: UserKeyData[] = out.get_user_keys();
-
-		const user_data: UserData = {
-			device,
-			user_keys,
-			jwt: out.get_jwt(),
-			refresh_token: out.get_refresh_token(),
-			user_id: out.get_id(),
-			device_id: out.get_device_id(),
-			key_map: new Map(),
-			newest_key_id: "",
-			encrypted_hmac_key: out.get_encrypted_hmac_key(),
-			encrypted_hmac_alg: out.get_encrypted_hmac_alg(),
-			encrypted_hmac_encryption_key_id: out.get_encrypted_hmac_encryption_key_id(),
-			hmac_key: ""
-		};
-
-		return getUser(deviceIdentifier, user_data);
+		return this.buildUserObj(deviceIdentifier, out);
 	}
 
 	/**

@@ -12,7 +12,7 @@ import {
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
-	GroupList,
+	GroupList, GroupOutDataHmacKeys,
 	GroupOutDataKeys,
 	GroupUserListItem,
 	HttpMethod,
@@ -158,7 +158,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		access_by_group_as_member,
 		access_by_parent_group,
 		is_connected_group: out.get_is_connected_group(),
-		hmac_key: ""
+		hmac_keys: []
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
@@ -190,15 +190,11 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	}
 
 	//now decrypt the hmac key for searchable encryption, the right key must be fetched before
-	const hmac_key = out.get_encrypted_hmac_key();
-	const hmac_alg = out.get_encrypted_hmac_alg();
-	const hmac_id = out.get_encrypted_hmac_encryption_key_id();
+	const hmac_keys: GroupOutDataHmacKeys[] = out.get_hmac_keys();
 
-	const hmac_encrypted_key = await group_obj.getSymKeyById(hmac_id);
-	const decrypted_hmac_key = group_decrypt_hmac_key(hmac_encrypted_key, hmac_key, hmac_alg);
-
-	group_obj.data.hmac_key = decrypted_hmac_key;
-	group_data.hmac_key = decrypted_hmac_key;
+	const decrypted_hmac_keys = await group_obj.decryptHmacKeys(hmac_keys);
+	group_obj.data.hmac_keys = decrypted_hmac_keys;
+	group_data.hmac_keys = decrypted_hmac_keys;
 
 	//store the group data
 	await storage.set(group_key, group_data);
@@ -1046,6 +1042,24 @@ export class Group extends AbstractSymCrypto
 		return keys;
 	}
 
+	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
+	{
+		const keys = [];
+
+		for (let i = 0; i < fetchedKeys.length; i++) {
+			const fetched_key = fetchedKeys[i];
+
+			// eslint-disable-next-line no-await-in-loop
+			const group_key = await this.getSymKeyById(fetched_key.group_key_id);
+
+			const decrypted_hmac_key = group_decrypt_hmac_key(group_key, fetched_key.key_data);
+
+			keys.push(decrypted_hmac_key);
+		}
+
+		return keys;
+	}
+
 	private prepareKeys(page = 0): [string, boolean]
 	{
 		return prepareKeys(this.data.keys, page);
@@ -1128,6 +1142,11 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	getNewestHmacKey(): string
+	{
+		return this.data.hmac_keys[0];
 	}
 
 	//__________________________________________________________________________________________________________________

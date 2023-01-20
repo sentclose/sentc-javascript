@@ -3,7 +3,7 @@ import {
 	FileCreateOutput,
 	FileMetaInformation, FilePrepareCreateOutput,
 	GroupInviteListItem, GroupKeyRotationOut,
-	GroupList, HttpMethod,
+	GroupList, GroupOutDataHmacKeys, HttpMethod,
 	USER_KEY_STORAGE_NAMES,
 	UserData, UserDeviceList, UserKeyData
 } from "./Enities";
@@ -33,7 +33,7 @@ import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
 import {handle_general_server_response, handle_server_response, make_req} from "./core";
 
-export async function getUser(deviceIdentifier: string, user_data: UserData)
+export async function getUser(deviceIdentifier: string, user_data: UserData, encrypted_hmac_keys: GroupOutDataHmacKeys[] = [])
 {
 	//Only fetch the older keys when needed, this is not like a group where all keys must be available
 
@@ -58,11 +58,9 @@ export async function getUser(deviceIdentifier: string, user_data: UserData)
 	const user = new User(Sentc.options.base_url, Sentc.options.app_token, user_data, deviceIdentifier);
 
 	//decrypt the hmac key
-	const hmac_encrypted_key = await user.getUserSymKey(user_data.encrypted_hmac_encryption_key_id);
-	const decrypted_hmac_key = group_decrypt_hmac_key(hmac_encrypted_key, user_data.encrypted_hmac_key, user_data.encrypted_hmac_alg);
-	
-	user.user_data.hmac_key = decrypted_hmac_key;
-	store_user_data.hmac_key = decrypted_hmac_key;
+	const decrypted_hmac_keys = await user.decryptHmacKeys(encrypted_hmac_keys);
+	user.user_data.hmac_keys = decrypted_hmac_keys;
+	store_user_data.hmac_keys = decrypted_hmac_keys;
 
 	//save user data in indexeddb
 	const storage = await Sentc.getStore();
@@ -136,6 +134,11 @@ export class User extends AbstractAsymCrypto
 		return [public_key.key, public_key.id];
 	}
 
+	getNewestHmacKey(): string
+	{
+		return this.user_data.hmac_keys[0];
+	}
+
 	private getNewestKey()
 	{
 		let index = this.user_data.key_map.get(this.user_data.newest_key_id);
@@ -170,6 +173,24 @@ export class User extends AbstractAsymCrypto
 		this.user_data.user_keys.push(user_keys);
 
 		this.user_data.key_map.set(user_keys.group_key_id, index);
+	}
+
+	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
+	{
+		const keys = [];
+
+		for (let i = 0; i < fetchedKeys.length; i++) {
+			const fetched_key = fetchedKeys[i];
+
+			// eslint-disable-next-line no-await-in-loop
+			const group_key = await this.getUserSymKey(fetched_key.group_key_id);
+
+			const decrypted_hmac_key = group_decrypt_hmac_key(group_key, fetched_key.key_data);
+
+			keys.push(decrypted_hmac_key);
+		}
+
+		return keys;
 	}
 
 	public async fetchUserKey(key_id: string, first = false)
