@@ -16,7 +16,7 @@ import {
 	GroupOutDataKeys,
 	GroupUserListItem,
 	HttpMethod,
-	KeyRotationInput, KeyRotationStartServerOutput,
+	KeyRotationInput, KeyRotationStartServerOutput, ListSearchItem,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -39,7 +39,7 @@ import {
 	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_prepare_update_rank
+	group_prepare_update_rank, prepare_create_searchable, prepare_search
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -1252,5 +1252,44 @@ export class Group extends AbstractSymCrypto
 		const jwt = await this.getJwt();
 
 		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id, this.data.access_by_group_as_member);
+	}
+
+	//__________________________________________________________________________________________________________________
+	//searchable encryption
+
+	public prepareCreateSearchableItem(item_ref: string, data: string, full: boolean, category?: string, limit?: number)
+	{
+		const key = this.getNewestHmacKey();
+
+		return prepare_create_searchable(key, item_ref, category ?? "", data, full, limit);
+	}
+
+	public prepareSearchItem(data: string)
+	{
+		const key = this.getNewestHmacKey();
+
+		return prepare_search(key, data);
+	}
+
+	public async searchItem(data: string, last_fetched_item, cat_id?: string): Promise<ListSearchItem[]>
+	{
+		const jwt = await this.user.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.id ?? "none";
+
+		const search_str = this.prepareSearchItem(data);
+
+		let url;
+
+		if (cat_id === undefined || cat_id === null || cat_id === "") {
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/all/" + search_str + "/" + last_fetched_time + "/" + last_id;
+		} else {
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + search_str + "/" + last_fetched_time + "/" + last_id;
+		}
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_server_response(res);
 	}
 }

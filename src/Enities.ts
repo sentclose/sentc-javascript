@@ -222,6 +222,14 @@ export interface FileCreateOutput
 }
 
 //______________________________________________________________________________________________________________________
+export interface ListSearchItem
+{
+	id: string,
+	item_ref: string,
+	time: number
+}
+
+//______________________________________________________________________________________________________________________
 
 export interface ServerOutput<T> {
 	status: boolean,
