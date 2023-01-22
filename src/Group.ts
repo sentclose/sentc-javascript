@@ -1283,9 +1283,9 @@ export class Group extends AbstractSymCrypto
 		let url;
 
 		if (cat_id === undefined || cat_id === null || cat_id === "") {
-			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/all/" + search_str + "/" + last_fetched_time + "/" + last_id;
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
 		} else {
-			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + search_str + "/" + last_fetched_time + "/" + last_id;
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
 		}
 
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
