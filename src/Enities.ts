@@ -49,10 +49,7 @@ export interface UserData
 	refresh_token: string,
 	user_id: string,
 	device_id: string,
-	encrypted_hmac_key: string,
-	encrypted_hmac_alg: string,
-	encrypted_hmac_encryption_key_id: string,
-	hmac_key: string	//the decrypted hmac key
+	hmac_keys: string[]	//the decrypted hmac key
 }
 
 export interface UserDeviceList
@@ -75,6 +72,11 @@ export interface GroupOutDataKeys {
 	key_data: string
 }
 
+export interface GroupOutDataHmacKeys {
+	group_key_id: string,
+	key_data: string
+}
+
 export interface GroupData
 {
 	group_id: string,
@@ -90,7 +92,7 @@ export interface GroupData
 	access_by_parent_group: string | undefined,
 	access_by_group_as_member: string | "", //empty string -> access directly
 	is_connected_group: boolean,
-	hmac_key: string
+	hmac_keys: string[]
 }
 
 export interface GroupList
@@ -217,6 +219,14 @@ export interface FileCreateOutput
 	file_id: string,
 	master_key_id: string,
 	encrypted_file_name: string
+}
+
+//______________________________________________________________________________________________________________________
+export interface ListSearchItem
+{
+	id: string,
+	item_ref: string,
+	time: number
 }
 
 //______________________________________________________________________________________________________________________

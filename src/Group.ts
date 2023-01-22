@@ -12,11 +12,11 @@ import {
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
-	GroupList,
+	GroupList, GroupOutDataHmacKeys,
 	GroupOutDataKeys,
 	GroupUserListItem,
 	HttpMethod,
-	KeyRotationInput, KeyRotationStartServerOutput,
+	KeyRotationInput, KeyRotationStartServerOutput, ListSearchItem,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -39,7 +39,7 @@ import {
 	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_prepare_update_rank
+	group_prepare_update_rank, prepare_create_searchable, prepare_search
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -158,7 +158,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		access_by_group_as_member,
 		access_by_parent_group,
 		is_connected_group: out.get_is_connected_group(),
-		hmac_key: ""
+		hmac_keys: []
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
@@ -190,15 +190,11 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	}
 
 	//now decrypt the hmac key for searchable encryption, the right key must be fetched before
-	const hmac_key = out.get_encrypted_hmac_key();
-	const hmac_alg = out.get_encrypted_hmac_alg();
-	const hmac_id = out.get_encrypted_hmac_encryption_key_id();
+	const hmac_keys: GroupOutDataHmacKeys[] = out.get_hmac_keys();
 
-	const hmac_encrypted_key = await group_obj.getSymKeyById(hmac_id);
-	const decrypted_hmac_key = group_decrypt_hmac_key(hmac_encrypted_key, hmac_key, hmac_alg);
-
-	group_obj.data.hmac_key = decrypted_hmac_key;
-	group_data.hmac_key = decrypted_hmac_key;
+	const decrypted_hmac_keys = await group_obj.decryptHmacKeys(hmac_keys);
+	group_obj.data.hmac_keys = decrypted_hmac_keys;
+	group_data.hmac_keys = decrypted_hmac_keys;
 
 	//store the group data
 	await storage.set(group_key, group_data);
@@ -1046,6 +1042,24 @@ export class Group extends AbstractSymCrypto
 		return keys;
 	}
 
+	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
+	{
+		const keys = [];
+
+		for (let i = 0; i < fetchedKeys.length; i++) {
+			const fetched_key = fetchedKeys[i];
+
+			// eslint-disable-next-line no-await-in-loop
+			const group_key = await this.getSymKeyById(fetched_key.group_key_id);
+
+			const decrypted_hmac_key = group_decrypt_hmac_key(group_key, fetched_key.key_data);
+
+			keys.push(decrypted_hmac_key);
+		}
+
+		return keys;
+	}
+
 	private prepareKeys(page = 0): [string, boolean]
 	{
 		return prepareKeys(this.data.keys, page);
@@ -1128,6 +1142,11 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	getNewestHmacKey(): string
+	{
+		return this.data.hmac_keys[0];
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -1233,5 +1252,44 @@ export class Group extends AbstractSymCrypto
 		const jwt = await this.getJwt();
 
 		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id, this.data.access_by_group_as_member);
+	}
+
+	//__________________________________________________________________________________________________________________
+	//searchable encryption
+
+	public prepareCreateSearchableItem(item_ref: string, data: string, full: boolean, category?: string, limit?: number)
+	{
+		const key = this.getNewestHmacKey();
+
+		return prepare_create_searchable(key, item_ref, category ?? "", data, full, limit);
+	}
+
+	public prepareSearchItem(data: string)
+	{
+		const key = this.getNewestHmacKey();
+
+		return prepare_search(key, data);
+	}
+
+	public async searchItem(data: string, last_fetched_item, cat_id?: string): Promise<ListSearchItem[]>
+	{
+		const jwt = await this.user.getJwt();
+
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.id ?? "none";
+
+		const search_str = this.prepareSearchItem(data);
+
+		let url;
+
+		if (cat_id === undefined || cat_id === null || cat_id === "") {
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
+		} else {
+			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
+		}
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_server_response(res);
 	}
 }
