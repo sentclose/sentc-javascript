@@ -1271,7 +1271,7 @@ export class Group extends AbstractSymCrypto
 		return prepare_search(key, data);
 	}
 
-	public async searchItem(data: string, last_fetched_item, cat_id?: string): Promise<ListSearchItem[]>
+	public async searchItem(data: string, last_fetched_item?: ListSearchItem, cat_id?: string): Promise<ListSearchItem[]>
 	{
 		const jwt = await this.user.getJwt();
 
