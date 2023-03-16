@@ -62,6 +62,7 @@ export interface UserDeviceList
 export interface GroupKey {
 	private_group_key: string,
 	public_group_key: string,
+	exported_public_key: string,
 	group_key: string,
 	time: string,
 	group_key_id: string

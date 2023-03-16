@@ -195,9 +195,13 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	const decrypted_hmac_keys = await group_obj.decryptHmacKeys(hmac_keys);
 	group_obj.data.hmac_keys = decrypted_hmac_keys;
 	group_data.hmac_keys = decrypted_hmac_keys;
-
-	//store the group data
-	await storage.set(group_key, group_data);
+	
+	await Promise.all([
+		//store the group data
+		storage.set(group_key, group_data),
+		//save always the newest public key
+		storage.set(USER_KEY_STORAGE_NAMES.groupPublicKey + "_id_" + group_id, {key: keys[0].exported_public_key, id: keys[0].group_key_id})
+	]);
 
 	return group_obj;
 }
@@ -1035,7 +1039,8 @@ export class Group extends AbstractSymCrypto
 				group_key: decrypted_keys.get_group_key(),
 				private_group_key: decrypted_keys.get_private_group_key(),
 				time: decrypted_keys.get_time(),
-				public_group_key: decrypted_keys.get_public_group_key()
+				public_group_key: decrypted_keys.get_public_group_key(),
+				exported_public_key: decrypted_keys.get_exported_public_group_key()
 			});
 		}
 
@@ -1085,8 +1090,13 @@ export class Group extends AbstractSymCrypto
 			this.data.keys.push(decrypted_key[0]);
 			this.data.key_map.set(decrypted_key[0].group_key_id, last_inserted_key_index);
 
+			const storage = await Sentc.getStore();
+
 			if (new_keys) {
 				this.data.newest_key_id = decrypted_key[0].group_key_id;
+
+				//save also the newest key in the cache
+				await storage.set(USER_KEY_STORAGE_NAMES.groupPublicKey + "_id_" + this.data.group_id, {key: decrypted_key[0].exported_public_key, id: decrypted_key[0].group_key_id});
 			}
 
 			let actual_user_id;
@@ -1096,7 +1106,6 @@ export class Group extends AbstractSymCrypto
 				actual_user_id = this.data.access_by_group_as_member;
 			}
 
-			const storage = await Sentc.getStore();
 			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + actual_user_id + "_id_" + this.data.group_id;
 
 			await storage.set(group_key, this.data);
