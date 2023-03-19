@@ -164,6 +164,13 @@ describe("Group Test", () => {
 		chai.assert.notEqual(old_newest_key, new_newest_key);
 	});
 
+	it("should get the group public key", async function() {
+		const key = await sentc.getGroupPublicKey(group.data.group_id);
+
+		//should be the newest key
+		chai.assert.equal(key.id, group.data.newest_key_id);
+	});
+
 	it("should test encrypt after key rotation", async function() {
 		encrypted_string_by_user_0_after_kr = await group.encryptString("hello there £ Я a a 👍 1");
 	});
@@ -346,13 +353,6 @@ describe("Group Test", () => {
 
 			chai.assert.equal(json.status, "server_310");
 		}
-	});
-
-	it("should get the group public key", async function() {
-		const key = await sentc.getGroupPublicKey(group.data.group_id);
-
-		//should be the newest key
-		chai.assert.equal(key.id, group.data.newest_key_id);
 	});
 
 	//child group
