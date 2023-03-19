@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc",
-  "version": "0.5.0-rc.1",
+  "version": "0.6.0",
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
       "email": "j.heinemann@sentclose.com"
     }
   ],
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "bugs": {
     "url": "https://gitlab.com/sentclose/sentc/sdk-implementations/sentc-javascript/issues"
   },
@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "idb": "^6.1.4",
-    "sentc_wasm": "^0.5.0-rc.1"
+    "sentc_wasm": "^0.6.0"
   },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "1.0.0",
