@@ -39,7 +39,9 @@ import {
 	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_prepare_update_rank, prepare_create_searchable, prepare_search
+	group_prepare_update_rank, prepare_create_searchable,
+	prepare_search,
+	prepare_create_searchable_light
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -1265,6 +1267,19 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 	//searchable encryption
+
+	public prepareCreateSearchableItemLight(data: string, full: boolean, limit?: number)
+	{
+		const key = this.getNewestHmacKey();
+
+		const out = prepare_create_searchable_light(key, data, full, limit);
+
+		return {
+			hashes: <string[]>out.get_hashes(),
+			alg: out.get_alg(),
+			key_id: out.get_key_id()
+		};
+	}
 
 	public prepareCreateSearchableItem(item_ref: string, data: string, full: boolean, category?: string, limit?: number)
 	{
