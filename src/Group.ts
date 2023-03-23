@@ -1275,7 +1275,7 @@ export class Group extends AbstractSymCrypto
 		const out = prepare_create_searchable_light(key, data, full, limit);
 
 		return {
-			hashes: out.get_hashes(),
+			hashes: <string[]>out.get_hashes(),
 			alg: out.get_alg(),
 			key_id: out.get_key_id()
 		};
