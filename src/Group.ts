@@ -16,7 +16,7 @@ import {
 	GroupOutDataKeys,
 	GroupUserListItem,
 	HttpMethod,
-	KeyRotationInput, KeyRotationStartServerOutput, ListSearchItem,
+	KeyRotationInput, KeyRotationStartServerOutput, ListSearchItem, PrepareSearchableLight,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -1162,6 +1162,14 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 
+	/**
+	 * Prepare the register of a file. The server input could be passed to the sentc api from your backend
+	 *
+	 * encrypted_file_name, key and master_key_id are only for the frontend to encrypt more data if necessary
+	 *
+	 * @param file
+	 * @throws SentcError
+	 */
 	public async prepareRegisterFile(file: File): Promise<FilePrepareCreateOutput>
 	{
 		const key = await this.registerKey();
@@ -1178,37 +1186,76 @@ export class Group extends AbstractSymCrypto
 		};
 	}
 
+	/**
+	 * Validates the sentc file register output
+	 * Returns the file id
+	 *
+	 * @param server_output
+	 */
 	public doneFileRegister(server_output: string)
 	{
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
-		uploader.doneFileRegister(server_output);
+		return uploader.doneFileRegister(server_output);
 	}
-	
-	public uploadFile(file: File, content_key: SymKey): Promise<[string, string]>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: true): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 * upload the chunks signed by the creators sign key
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 * @param sign
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign: true): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 * optional upload the chunks signed by the creators sign key
+	 * Show the upload progress of how many chunks are already uploaded
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 * @param sign
+	 * @param upload_callback
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign: boolean, upload_callback: (progress?: number) => void): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign = false, upload_callback?: (progress?: number) => void)
 	{
+		//call this after file register
 		const uploader = new Uploader(this.base_url, this.app_token, this.user, this.data.group_id, undefined, upload_callback, this.data.access_by_group_as_member);
 
-		return uploader.uploadFile(file, content_key.key, content_key.master_key_id, sign);
+		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
 	//__________________________________________________________________________________________________________________
 
+	/**
+	 * Register and upload a file to the sentc api.
+	 * The file will be encrypted
+	 *
+	 * @param file
+	 */
 	public createFile(file: File): Promise<FileCreateOutput>;
 
 	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: false, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
-
-	public createFile(file: File, sign: true, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
+	public createFile(file: File, sign: boolean, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
 	public async createFile(file: File, sign = false, upload_callback?: (progress?: number) => void)
 	{
@@ -1268,7 +1315,7 @@ export class Group extends AbstractSymCrypto
 	//__________________________________________________________________________________________________________________
 	//searchable encryption
 
-	public prepareCreateSearchableItemLight(data: string, full: boolean, limit?: number)
+	public prepareCreateSearchableItemLight(data: string, full: boolean, limit?: number): PrepareSearchableLight
 	{
 		const key = this.getNewestHmacKey();
 
