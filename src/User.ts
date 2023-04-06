@@ -532,8 +532,27 @@ export class User extends AbstractAsymCrypto
 
 	//__________________________________________________________________________________________________________________
 
+	/**
+	 * Prepare the register of a file. The server input could be passed to the sentc api from your backend
+	 *
+	 * encrypted_file_name, key and master_key_id are only for the frontend to encrypt more data if necessary
+	 *
+	 * @param file
+	 * @throws SentcError
+	 */
 	public prepareRegisterFile(file: File): Promise<FilePrepareCreateOutput>;
 
+	/**
+	 * Prepare the register of a file. The server input could be passed to the sentc api from your backend
+	 *
+	 * encrypted_file_name, key and master_key_id are only for the frontend to encrypt more data if necessary
+	 *
+	 * this file is registered for another user to open it
+	 *
+	 * @param file
+	 * @param reply_id
+	 * @throws SentcError
+	 */
 	public prepareRegisterFile(file: File, reply_id: string): Promise<FilePrepareCreateOutput>;
 
 	public async prepareRegisterFile(file: File, reply_id = ""): Promise<FilePrepareCreateOutput>
@@ -555,41 +574,77 @@ export class User extends AbstractAsymCrypto
 		};
 	}
 
+	/**
+	 * Validates the sentc file register output
+	 * Returns the file id
+	 *
+	 * @param server_output
+	 */
 	public doneFileRegister(server_output: string)
 	{
 		const uploader = new Uploader(this.base_url, this.app_token, this);
 
-		uploader.doneFileRegister(server_output);
+		return uploader.doneFileRegister(server_output);
 	}
 
-	public uploadFile(file: File, content_key: SymKey): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: true): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 * upload the chunks signed by the creators sign key
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 * @param sign
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign: true): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: false, upload_callback: (progress?: number) => void): Promise<[string, string]>;
+	/**
+	 * Upload a registered file.
+	 * Session id is returned from the sentc api. The rest from @prepareRegisterFile
+	 * optional upload the chunks signed by the creators sign key
+	 * Show the upload progress of how many chunks are already uploaded
+	 *
+	 * @param file
+	 * @param content_key
+	 * @param session_id
+	 * @param sign
+	 * @param upload_callback
+	 */
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign: boolean, upload_callback: (progress?: number) => void): Promise<void>;
 
-	public uploadFile(file: File, content_key: SymKey, sign: true, upload_callback: (progress?: number) => void): Promise<[string, string]>;
-
-	public uploadFile(file: File, content_key: SymKey, sign = false, upload_callback?: (progress?: number) => void)
+	public uploadFile(file: File, content_key: SymKey, session_id: string, sign = false, upload_callback?: (progress?: number) => void)
 	{
 		const uploader = new Uploader(this.base_url, this.app_token, this, undefined, undefined, upload_callback);
 
-		return uploader.uploadFile(file, content_key.key, content_key.master_key_id, sign);
+		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
 	//__________________________________________________________________________________________________________________
 
+	/**
+	 * Register and upload a file to the sentc api.
+	 * The file will be encrypted
+	 *
+	 * @param file
+	 */
 	public createFile(file: File): Promise<FileCreateOutput>;
 
 	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: false, reply_id: string): Promise<FileCreateOutput>;
+	public createFile(file: File, sign: boolean, reply_id: string): Promise<FileCreateOutput>;
 
-	public createFile(file: File, sign: true, reply_id: string): Promise<FileCreateOutput>;
-
-	public createFile(file: File, sign: false, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
-
-	public createFile(file: File, sign: true, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
+	public createFile(file: File, sign: boolean, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
 	public async createFile(file: File, sign = false, reply_id = "", upload_callback?: (progress?: number) => void)
 	{

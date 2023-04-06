@@ -3,6 +3,18 @@ import {SymKey} from "./crypto/SymKey";
 type GeneralIdFormat = string;
 export type UserId = GeneralIdFormat;
 
+/**
+ * The error representation
+ *
+ * The Error gets usually thrown as Error(String)
+ * where the string is the json version of this interface
+ */
+export interface SentcError
+{
+	status: string,
+	error_message: string
+}
+
 export const enum USER_KEY_STORAGE_NAMES
 {
 	userData = "user_data",
@@ -228,6 +240,13 @@ export interface ListSearchItem
 	id: string,
 	item_ref: string,
 	time: number
+}
+
+export interface PrepareSearchableLight
+{
+	hashes: string[],
+	alg: string,
+	key_id: string
 }
 
 //______________________________________________________________________________________________________________________
