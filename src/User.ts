@@ -630,6 +630,85 @@ export class User extends AbstractAsymCrypto
 		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
+	private async getFileMetaInfo(file_id: string, verify_key = "", downloader: Downloader): Promise<[FileMetaInformation, SymKey]>
+	{
+		//1. get the file info
+		const file_meta = await downloader.downloadFileMetaInformation(file_id);
+
+		//2. get the content key which was used to encrypt the file
+		const key_id = file_meta.key_id;
+		const key = await this.fetchGeneratedKey(key_id, file_meta.master_key_id);
+
+		//3. get the file name if any
+		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {
+			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
+		}
+
+		return [file_meta, key];
+	}
+
+	/**
+	 * Get the FileMetaInformation which contains all Information about the file
+	 * Return also the file key back.
+	 *
+	 * This function can be used if the user needs the decrypted file name.
+	 *
+	 * @param file_id
+	 */
+	public downloadFileMetaInfo(file_id: string): Promise<[FileMetaInformation, SymKey]>;
+
+	/**
+	 * The same but with a verify key
+	 *
+	 * @param file_id
+	 * @param verify_key
+	 */
+	public downloadFileMetaInfo(file_id: string, verify_key: string): Promise<[FileMetaInformation, SymKey]>;
+
+	public downloadFileMetaInfo(file_id: string, verify_key = "")
+	{
+		const downloader = new Downloader(this.base_url, this.app_token, this);
+
+		return this.getFileMetaInfo(file_id, verify_key, downloader);
+	}
+
+	/**
+	 * Download a file but with already downloaded file information and
+	 * the file key to not fetch the info and the key again.
+	 *
+	 * This function can be used after the downloadFileMetaInfo function
+	 *
+	 * @param key
+	 * @param file_meta
+	 */
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation): Promise<string>;
+
+	/**
+	 * The same but with a verify key to verify each file part
+	 *
+	 * @param key
+	 * @param file_meta
+	 * @param verify_key
+	 */
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key: string): Promise<string>;
+
+	/**
+	 * The same but with optional verify key and a function to show the download progress
+	 *
+	 * @param key
+	 * @param file_meta
+	 * @param verify_key
+	 * @param updateProgressCb
+	 */
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
+
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key = "", updateProgressCb?: (progress: number) => void)
+	{
+		const downloader = new Downloader(this.base_url, this.app_token, this);
+
+		return downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	/**
@@ -640,10 +719,24 @@ export class User extends AbstractAsymCrypto
 	 */
 	public createFile(file: File): Promise<FileCreateOutput>;
 
+	/**
+	 * Create a file and sign each file part with the sign key of the creator
+	 *
+	 * @param file
+	 * @param sign
+	 */
 	public createFile(file: File, sign: true): Promise<FileCreateOutput>;
 
 	public createFile(file: File, sign: boolean, reply_id: string): Promise<FileCreateOutput>;
 
+	/**
+	 * The same but with optional signing and a function to show the upload progress
+	 *
+	 * @param file
+	 * @param sign
+	 * @param reply_id
+	 * @param upload_callback
+	 */
 	public createFile(file: File, sign: boolean, reply_id: string, upload_callback: (progress?: number) => void): Promise<FileCreateOutput>;
 
 	public async createFile(file: File, sign = false, reply_id = "", upload_callback?: (progress?: number) => void)
@@ -666,27 +759,35 @@ export class User extends AbstractAsymCrypto
 		};
 	}
 
+	/**
+	 * Download a file. THis function will also download the file meta information before
+	 *
+	 * @param file_id
+	 */
 	public downloadFile(file_id: string): Promise<[string, FileMetaInformation, SymKey]>;
-	
+
+	/**
+	 * The same but with a verify key of the file creator
+	 *
+	 * @param file_id
+	 * @param verify_key
+	 */
 	public downloadFile(file_id: string, verify_key: string): Promise<[string, FileMetaInformation, SymKey]>;
 
+	/**
+	 * The same but with an optional verify key and a function to show the download progress
+	 *
+	 * @param file_id
+	 * @param verify_key
+	 * @param updateProgressCb
+	 */
 	public downloadFile(file_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
 	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
-		//1. get the file info
-		const file_meta = await downloader.downloadFileMetaInformation(file_id);
-
-		//2. get the content key which was used to encrypt the file
-		const key_id = file_meta.key_id;
-		const key = await this.fetchGeneratedKey(key_id, file_meta.master_key_id);
-
-		//3. get the file name if any
-		if (file_meta.encrypted_file_name && file_meta.encrypted_file_name !== "") {
-			file_meta.file_name = key.decryptString(file_meta.encrypted_file_name, verify_key);
-		}
+		const [file_meta, key] = await this.getFileMetaInfo(file_id, verify_key, downloader);
 
 		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
 

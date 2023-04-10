@@ -82,7 +82,9 @@ describe("File test", () => {
 	});
 
 	it("should download the manually registered file", async function() {
-		const [file, file_info] = await group_for_user_1.downloadFile(file_1);
+		const [file_info, key] = await group_for_user_1.downloadFileMetaInfo(file_1);
+		
+		const file = await group_for_user_1.downloadFileWithMetaInfo(key, file_info);
 
 		chai.assert.equal(file_info.file_name, "hello");
 
