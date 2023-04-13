@@ -3,11 +3,11 @@ import {
 	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
 	deserialize_head_from_string,
 	encrypt_raw_symmetric, encrypt_string_symmetric,
-	encrypt_symmetric, generate_and_register_sym_key, generate_non_register_sym_key, get_sym_key_by_id,
+	encrypt_symmetric, generate_and_register_sym_key, generate_non_register_sym_key,
 	split_head_and_encrypted_data, split_head_and_encrypted_string
 } from "sentc_wasm";
 import {AbstractCrypto} from "./AbstractCrypto";
-import {SymKey} from "./SymKey";
+import {fetchSymKey, SymKey} from "./SymKey";
 import {Sentc} from "../Sentc";
 
 /**
@@ -167,7 +167,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		return new SymKey(this.base_url, this.app_token, key, key_id, key_data[1], await this.getSignKey());
 	}
 
-	public async generateNonRegisteredKey()
+	public async generateNonRegisteredKey(): Promise<[SymKey, string]>
 	{
 		const key_data = await this.getSymKeyToEncrypt();
 
@@ -183,9 +183,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key = await this.getSymKeyById(master_key_id);
 
-		const key_out = await get_sym_key_by_id(this.base_url, this.app_token, key_id, key);
-
-		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id, await this.getSignKey());
+		return fetchSymKey(this.base_url, this.app_token, key_id, key, master_key_id, await this.getSignKey());
 	}
 
 	//__________________________________________________________________________________________________________________
