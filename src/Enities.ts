@@ -24,7 +24,9 @@ export const enum USER_KEY_STORAGE_NAMES
 	userVerifyKey = "user_verify_key",
 
 	groupData = "group_data",
-	groupPublicKey = "group_public_key"
+	groupPublicKey = "group_public_key",
+
+	sym_key = "sym_key"
 }
 
 export interface UserKeyData
