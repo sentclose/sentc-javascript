@@ -22,20 +22,17 @@ export async function fetchSymKey(base_url:string, app_token: string, key_id: st
 	const cache_key = USER_KEY_STORAGE_NAMES.sym_key + "_id_" + key_id;
 
 	const storage = await Sentc.getStore();
-	const sym_key_raw: SymKey | undefined = await storage.getItem(cache_key);
+	const sym_key_raw: string | undefined = await storage.getItem(cache_key);
 
 	if (sym_key_raw) {
-		sym_key_raw.base_url = base_url;
-		sym_key_raw.app_token = app_token;
-
-		return sym_key_raw;
+		return new SymKey(base_url, app_token, sym_key_raw, key_id, master_key_id, sign_key);
 	}
 
 	const key_out = await get_sym_key_by_id(base_url, app_token, key_id, master_key);
 
 	const sym_key = new SymKey(base_url, app_token, key_out, key_id, master_key_id, sign_key);
 
-	await storage.set(cache_key, sym_key);
+	await storage.set(cache_key, key_out);
 
 	return sym_key;
 }
@@ -45,20 +42,17 @@ export async function fetchSymKeyByPrivateKey(base_url:string, app_token: string
 	const cache_key = USER_KEY_STORAGE_NAMES.sym_key + "_id_" + key_id;
 
 	const storage = await Sentc.getStore();
-	const sym_key_raw: SymKey | undefined = await storage.getItem(cache_key);
+	const sym_key_raw: string | undefined = await storage.getItem(cache_key);
 
 	if (sym_key_raw) {
-		sym_key_raw.base_url = base_url;
-		sym_key_raw.app_token = app_token;
-
-		return sym_key_raw;
+		return new SymKey(base_url, app_token, sym_key_raw, key_id, master_key_id, sign_key);
 	}
 
 	const key_out = await get_sym_key_by_id_by_private_key(base_url, app_token, key_id, master_key);
 
 	const sym_key = new SymKey(base_url, app_token, key_out, key_id, master_key_id, sign_key);
 
-	await storage.set(cache_key, sym_key);
+	await storage.set(cache_key, key_out);
 
 	return sym_key;
 }
