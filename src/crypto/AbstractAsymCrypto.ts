@@ -14,11 +14,10 @@ import {
 	encrypt_string_asymmetric,
 	generate_and_register_sym_key_by_public_key,
 	generate_non_register_sym_key_by_public_key,
-	get_sym_key_by_id_by_private_key,
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string
 } from "sentc_wasm";
-import {SymKey} from "./SymKey";
+import {fetchSymKeyByPrivateKey, SymKey} from "./SymKey";
 import {Sentc} from "../Sentc";
 
 export abstract class AbstractAsymCrypto extends AbstractCrypto
@@ -183,8 +182,6 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 	{
 		const private_key = await this.getPrivateKey(master_key_id);
 
-		const key_out = await get_sym_key_by_id_by_private_key(this.base_url, this.app_token, key_id, private_key);
-
-		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id, await this.getSignKey());
+		return fetchSymKeyByPrivateKey(this.base_url, this.app_token, key_id, private_key, master_key_id, await this.getSignKey());
 	}
 }
