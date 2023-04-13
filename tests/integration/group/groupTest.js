@@ -479,7 +479,12 @@ describe("Group Test", () => {
 		chai.assert.equal(decrypted_str, "string");
 
 		//fetch key again to check if it is cached
-		await group_for_user_1.fetchKey(registered_key.key_id, registered_key.master_key_id);
+		//test the cached key to decrypt
+		const key1 = await group_for_user_1.fetchKey(registered_key.key_id, registered_key.master_key_id);
+
+		const decrypted_str1 = key1.decryptString(encrypted_string);
+
+		chai.assert.equal(decrypted_str1, "string");
 	});
 
 	it("should not delete the sym key when user got no access", async function() {
