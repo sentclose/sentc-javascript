@@ -6,7 +6,7 @@ import {Mutex} from "./Mutex";
 import {handle_server_response, make_req, StorageFactory, StorageInterface} from "../core";
 import {
 	decrypt_string_symmetric,
-	file_download_and_decrypt_file_part
+	file_download_and_decrypt_file_part, file_download_and_decrypt_file_part_start
 } from "sentc_wasm";
 import {User} from "../User";
 import {FileMetaFetched, FileMetaInformation, HttpMethod, PartListItem} from "../Enities";
@@ -158,6 +158,8 @@ export class Downloader
 
 		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
 
+		let next_file_key: string = content_key;
+
 		for (let i = 0; i < part_list.length; i++) {
 			const external = part_list[i].extern_storage === true;
 
@@ -166,8 +168,18 @@ export class Downloader
 			let part;
 
 			try {
-				// eslint-disable-next-line no-await-in-loop
-				part = await file_download_and_decrypt_file_part(this.base_url, part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
+				if (i === 0) {
+					//first part
+					// eslint-disable-next-line no-await-in-loop
+					const res = await file_download_and_decrypt_file_part_start(this.base_url, part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
+					next_file_key = res.get_next_file_key();
+					part = res.get_file();
+				} else {
+					// eslint-disable-next-line no-await-in-loop
+					const res = await file_download_and_decrypt_file_part(this.base_url, part_url_base, this.app_token, part_list[i].part_id, next_file_key, verify_key);
+					next_file_key = res.get_next_file_key();
+					part = res.get_file();
+				}
 			} catch (e) {
 				// eslint-disable-next-line no-await-in-loop
 				await Downloader.reset();	//remove the downloaded parts from the store

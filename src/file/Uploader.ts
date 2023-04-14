@@ -1,5 +1,11 @@
 import {User} from "../User";
-import {file_done_register_file, file_prepare_register_file, file_register_file, file_upload_part} from "sentc_wasm";
+import {
+	file_done_register_file,
+	file_prepare_register_file,
+	file_register_file,
+	file_upload_part,
+	file_upload_part_start
+} from "sentc_wasm";
 import {FileHelper} from "./FileHelper";
 import {Sentc} from "../Sentc";
 
@@ -83,6 +89,9 @@ export class Uploader
 
 		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
 
+		//each file is encrypted by a new key and this key is encrypted by the pre key
+		let next_file_key: string = content_key;
+
 		while (start < file.size) {
 			++currentChunk;
 
@@ -93,19 +102,36 @@ export class Uploader
 			end = start + this.chunk_size;
 			const isEnd = start >= file.size;
 
-			// eslint-disable-next-line no-await-in-loop
-			await file_upload_part(
-				this.base_url,
-				url_prefix,
-				this.app_token,
-				jwt,
-				session_id,
-				isEnd,
-				currentChunk,
-				content_key,
-				sign_key,
-				new Uint8Array(part)
-			);
+			if (currentChunk === 1) {
+				//first chunk
+				// eslint-disable-next-line no-await-in-loop
+				next_file_key = await file_upload_part_start(
+					this.base_url,
+					url_prefix,
+					this.app_token,
+					jwt,
+					session_id,
+					isEnd,
+					currentChunk,
+					content_key,
+					sign_key,
+					new Uint8Array(part)
+				);
+			} else {
+				// eslint-disable-next-line no-await-in-loop
+				next_file_key = await file_upload_part(
+					this.base_url,
+					url_prefix,
+					this.app_token,
+					jwt,
+					session_id,
+					isEnd,
+					currentChunk,
+					next_file_key,
+					sign_key,
+					new Uint8Array(part)
+				);
+			}
 
 			if (this.upload_callback) {
 				this.upload_callback(currentChunk / totalChunks);
