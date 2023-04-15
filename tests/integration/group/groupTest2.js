@@ -184,6 +184,13 @@ describe("Group test 2", () => {
 		//clean up
 
 		try {
+			//delete this group before because if the connected group is deleted we are not able to access this group
+			await connected_group.deleteGroup();
+		} catch (e) {
+			console.error(e);
+		}
+
+		try {
 			await group.deleteGroup();
 		} catch (e) {
 			console.error(e);
@@ -197,18 +204,6 @@ describe("Group test 2", () => {
 
 		try {
 			await group2.deleteGroup();
-		} catch (e) {
-			console.error(e);
-		}
-
-		try {
-			await connected_group.deleteGroup();
-		} catch (e) {
-			console.error(e);
-		}
-
-		try {
-			await child_group_connected_group.deleteGroup();
 		} catch (e) {
 			console.error(e);
 		}
