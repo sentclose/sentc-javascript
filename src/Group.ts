@@ -307,7 +307,7 @@ export class Group extends AbstractSymCrypto
 		return handle_general_server_response(res);
 	}
 
-	public async prepareKeysForNewMember(user_id: string, page = 0, group = false)
+	public async prepareKeysForNewMember(user_id: string, rank?: number, page = 0, group = false)
 	{
 		const key_count = this.data.keys.length;
 
@@ -321,30 +321,30 @@ export class Group extends AbstractSymCrypto
 
 		const [key_string] = this.prepareKeys(page);
 
-		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, this.data.rank);
+		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, rank, this.data.rank);
 	}
 
-	public invite(user_id: string)
+	public invite(user_id: string, rank?: number)
 	{
-		return this.inviteUserInternally(user_id);
+		return this.inviteUserInternally(user_id, rank);
 	}
 
-	public inviteAuto(user_id: string)
+	public inviteAuto(user_id: string, rank?: number)
 	{
-		return this.inviteUserInternally(user_id, true);
+		return this.inviteUserInternally(user_id, rank, true);
 	}
 
-	public inviteGroup(group_id: string)
+	public inviteGroup(group_id: string, rank?: number)
 	{
-		return this.inviteUserInternally(group_id, false, true);
+		return this.inviteUserInternally(group_id, rank, false, true);
 	}
 
-	public inviteGroupAuto(group_id: string)
+	public inviteGroupAuto(group_id: string, rank?: number)
 	{
-		return this.inviteUserInternally(group_id, true, true);
+		return this.inviteUserInternally(group_id, rank, true, true);
 	}
 
-	private async inviteUserInternally(user_id: string, auto = false, group = false)
+	private async inviteUserInternally(user_id: string, rank?: number, auto = false, group = false)
 	{
 		let public_key;
 
@@ -366,6 +366,7 @@ export class Group extends AbstractSymCrypto
 			this.data.group_id,
 			user_id,
 			key_count,
+			rank,
 			this.data.rank,
 			auto,
 			group,
@@ -439,7 +440,7 @@ export class Group extends AbstractSymCrypto
 		return handle_general_server_response(res);
 	}
 
-	public async acceptJoinRequest(user_id: string, user_type: 0 | 2 = 0)
+	public async acceptJoinRequest(user_id: string, user_type: 0 | 2 = 0, rank?: number)
 	{
 		const jwt = await this.user.getJwt();
 		const key_count = this.data.keys.length;
@@ -460,6 +461,7 @@ export class Group extends AbstractSymCrypto
 			this.data.group_id,
 			user_id,
 			key_count,
+			rank,
 			this.data.rank,
 			public_key.key,
 			key_string,
