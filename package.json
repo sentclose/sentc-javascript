@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "idb": "^6.1.4",
-    "sentc_wasm": "^0.7.0"
+    "sentc_wasm": "0.7.1"
   },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "1.0.0",
