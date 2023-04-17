@@ -380,9 +380,11 @@ describe("Group Test", () => {
 	});
 
 	it("should invite a user to the child group", async function() {
-		await child_group.inviteAuto(user2.user_data.user_id);
+		//test here also the rank
+		await child_group.inviteAuto(user2.user_data.user_id, 2);
 
 		child_group_user_2 = await user2.getGroup(child_group.data.group_id);
+		chai.assert.equal(child_group_user_2.data.rank, 2);
 	});
 
 	it("should get the child group by direct access", async function() {
