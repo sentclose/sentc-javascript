@@ -387,6 +387,10 @@ describe("Group Test", () => {
 		chai.assert.equal(child_group_user_2.data.rank, 2);
 	});
 
+	it("should re invite the user", async function() {
+		await child_group.reInviteUser(user2.user_data.user_id);
+	});
+
 	it("should get the child group by direct access", async function() {
 		//access the child group by user not by parent group -> the parent should be loaded too
 

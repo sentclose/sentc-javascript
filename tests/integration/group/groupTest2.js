@@ -123,6 +123,10 @@ describe("Group test 2", () => {
 		await connected_group.inviteGroupAuto(group2.data.group_id);
 	});
 
+	it("should re invite a group as member", async function() {
+		await connected_group.reInviteGroup(group2.data.group_id);
+	});
+
 	it("should access the group after invite", async function() {
 		const group_c = await group2.getConnectedGroup(connected_group.data.group_id);
 
