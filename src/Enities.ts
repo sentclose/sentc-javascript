@@ -141,6 +141,7 @@ export interface GroupKeyRotationOut
 }
 
 export interface KeyRotationInput {
+	error?: string,
 	encrypted_ephemeral_key_by_group_key_and_public_key: string,
 	encrypted_group_key_by_ephemeral: string,
 	ephemeral_alg: string,

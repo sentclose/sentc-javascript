@@ -664,6 +664,7 @@ export class Group extends AbstractSymCrypto
 		const de_server_output = group_get_done_key_rotation_server_input(server_output);
 
 		return {
+			error: de_server_output.get_error(),
 			encrypted_eph_key_key_id: de_server_output.get_encrypted_eph_key_key_id(),
 			encrypted_ephemeral_key_by_group_key_and_public_key: de_server_output.get_encrypted_ephemeral_key_by_group_key_and_public_key(),
 			encrypted_group_key_by_ephemeral: de_server_output.get_encrypted_group_key_by_ephemeral(),
