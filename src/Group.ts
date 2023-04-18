@@ -344,7 +344,17 @@ export class Group extends AbstractSymCrypto
 		return this.inviteUserInternally(group_id, rank, true, true);
 	}
 
-	private async inviteUserInternally(user_id: string, rank?: number, auto = false, group = false)
+	public reInviteUser(user_id: string)
+	{
+		return this.inviteUserInternally(user_id, undefined, false, false, true);
+	}
+
+	public reInviteGroup(group_id: string)
+	{
+		return this.inviteUserInternally(group_id, undefined, false, true, true);
+	}
+
+	private async inviteUserInternally(user_id: string, rank?: number, auto = false, group = false, re_invite = false)
 	{
 		let public_key;
 
@@ -370,6 +380,7 @@ export class Group extends AbstractSymCrypto
 			this.data.rank,
 			auto,
 			group,
+			re_invite,
 			public_key.key,
 			key_string, this.data.access_by_group_as_member
 		);
