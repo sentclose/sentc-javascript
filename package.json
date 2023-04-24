@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
