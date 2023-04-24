@@ -98,12 +98,16 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	const jwt = await user.getJwt();
 
 	if (group) {
-		const url = base_url + "/api/v1/group/" + group_id + "/update_check";
-		const res = await make_req(HttpMethod.GET, url, app_token, undefined, jwt, group_as_member);
-		const out: GroupDataCheckUpdateServerOutput = handle_server_response(res);
+		if (group.last_check_time + 60000 * 5 < Date.now()) {
+			//check this every 5 min
+			const url = base_url + "/api/v1/group/" + group_id + "/update_check";
+			const res = await make_req(HttpMethod.GET, url, app_token, undefined, jwt, group_as_member);
+			const out: GroupDataCheckUpdateServerOutput = handle_server_response(res);
 
-		group.rank = out.rank;
-		group.key_update = out.key_update;
+			group.rank = out.rank;
+			group.key_update = out.key_update;
+			group.last_check_time = Date.now();
+		}
 
 		return new Group(group, base_url, app_token, user);
 	}
@@ -160,7 +164,8 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		access_by_group_as_member,
 		access_by_parent_group,
 		is_connected_group: out.get_is_connected_group(),
-		hmac_keys: []
+		hmac_keys: [],
+		last_check_time: Date.now()
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, user);
@@ -277,6 +282,17 @@ export class Group extends AbstractSymCrypto
 		const jwt = await this.user.getJwt();
 
 		return group_create_connected_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, latest_key, this.data.access_by_group_as_member);
+	}
+
+	public async groupUpdateCheck()
+	{
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/update_check";
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, await this.getJwt(), this.data.access_by_group_as_member);
+		const out: GroupDataCheckUpdateServerOutput = handle_server_response(res);
+
+		this.data.rank = out.rank;
+		this.data.key_update = out.key_update;
+		this.data.last_check_time = Date.now();
 	}
 
 	public async getMember(last_fetched_item: GroupUserListItem | null = null)

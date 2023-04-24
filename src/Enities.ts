@@ -107,7 +107,8 @@ export interface GroupData
 	access_by_parent_group: string | undefined,
 	access_by_group_as_member: string | "", //empty string -> access directly
 	is_connected_group: boolean,
-	hmac_keys: string[]
+	hmac_keys: string[],
+	last_check_time: number,
 }
 
 export interface GroupList
