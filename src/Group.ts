@@ -93,7 +93,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user_id + "_id_" + group_id;
 
-	const group: GroupData = await storage.getItem(group_key);
+	const group = await storage.getItem<GroupData>(group_key);
 
 	const jwt = await user.getJwt();
 

@@ -488,7 +488,7 @@ export class Sentc
 	{
 		const storage = await this.getStore();
 
-		const user = await storage.getItem(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier);
+		const user = await storage.getItem<UserData>(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier);
 
 		if (!user) {
 			return false;
@@ -510,7 +510,7 @@ export class Sentc
 
 		const store_key = USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_id;
 
-		const user = await storage.getItem(store_key);
+		const user = await storage.getItem<{key: string, id: string}>(store_key);
 
 		if (user) {
 			return user;
@@ -542,7 +542,7 @@ export class Sentc
 
 		const store_key = USER_KEY_STORAGE_NAMES.userVerifyKey + "_id_" + user_id + "_key_id_" + verify_key_id;
 
-		const user = await storage.getItem(store_key);
+		const user = await storage.getItem<string>(store_key);
 
 		if (user) {
 			return user;
@@ -560,7 +560,7 @@ export class Sentc
 		const storage = await this.getStore();
 		const store_key = USER_KEY_STORAGE_NAMES.groupPublicKey + "_id_" + group_id;
 
-		const group = await storage.getItem(store_key);
+		const group = await storage.getItem<{key: string, id: string}>(store_key);
 
 		if (group) {
 			return group;

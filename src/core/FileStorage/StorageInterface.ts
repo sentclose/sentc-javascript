@@ -21,7 +21,7 @@ export interface StorageInterface
 
 	delete(key: string): Promise<void>;
 
-	getItem(key: string): Promise<any | undefined>;
+	getItem<T>(key: string): Promise<T | undefined>;
 
-	set(key: string, item: any): Promise<void | any>;
+	set<T>(key: string, item: T): Promise<void | any>;
 }
