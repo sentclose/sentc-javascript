@@ -83,6 +83,8 @@ export class Sentc
 		if (this.options?.storage?.getStorage) {
 			this.storage = await this.options.storage.getStorage();
 
+			this.init_storage = true;
+
 			return this.storage;
 		}
 
