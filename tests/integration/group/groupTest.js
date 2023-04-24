@@ -324,11 +324,11 @@ describe("Group Test", () => {
 		await group.updateRank(user1.user_data.user_id, 1);
 
 		//get the new group data for user 2 to get the new rank
-		group_for_user_1 = await user1.getGroup(group.data.group_id);
+		await group_for_user_1.groupUpdateCheck();
 
 		await group.updateRank(user2.user_data.user_id, 2);
 
-		group_for_user_2 = await user2.getGroup(group.data.group_id);
+		await group_for_user_2.groupUpdateCheck();
 	});
 
 	it("should not kick a user with higher rank", async function() {
