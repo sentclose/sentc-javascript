@@ -7,16 +7,22 @@ import {
 	FileMetaInformation,
 	FilePrepareCreateOutput,
 	GroupChildrenListItem,
-	GroupData, GroupDataCheckUpdateServerOutput,
+	GroupData,
+	GroupDataCheckUpdateServerOutput,
 	GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
-	GroupList, GroupOutDataHmacKeys,
+	GroupList,
+	GroupOutDataHmacKeys,
 	GroupOutDataKeys,
 	GroupUserListItem,
 	HttpMethod,
-	KeyRotationInput, KeyRotationStartServerOutput, ListSearchItem, PrepareSearchableLight,
+	KeyRotationInput,
+	KeyRotationStartServerOutput,
+	ListContentItem,
+	ListSearchItem,
+	PrepareSearchableLight,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -24,7 +30,8 @@ import {
 	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
-	group_create_connected_group, group_decrypt_hmac_key,
+	group_create_connected_group,
+	group_decrypt_hmac_key,
 	group_decrypt_key,
 	group_done_key_rotation,
 	group_finish_key_rotation,
@@ -39,9 +46,10 @@ import {
 	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_prepare_update_rank, prepare_create_searchable,
-	prepare_search,
-	prepare_create_searchable_light
+	group_prepare_update_rank,
+	prepare_create_searchable,
+	prepare_create_searchable_light,
+	prepare_search
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -1494,6 +1502,25 @@ export class Group extends AbstractSymCrypto
 			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
 		} else {
 			url = this.base_url + "api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
+		}
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_server_response(res);
+	}
+
+	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string): Promise<ListContentItem[]>
+	{
+		const jwt = await this.user.getJwt();
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.id ?? "none";
+
+		let url;
+
+		if (cat_id === undefined || cat_id === null || cat_id === "") {
+			url = this.base_url + "api/v1/content/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id;
+		} else {
+			url = this.base_url + "api/v1/content/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id;
 		}
 
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);

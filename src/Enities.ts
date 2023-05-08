@@ -239,6 +239,20 @@ export interface FileCreateOutput
 }
 
 //______________________________________________________________________________________________________________________
+
+export interface ListContentItem
+{
+	id: string,
+	item: string,
+	belongs_to_group?: string,
+	belongs_to_user?: string,
+	creator: string,
+	time: number,
+	category?: string,
+	access_from_group?: string,
+}
+
+//______________________________________________________________________________________________________________________
 export interface ListSearchItem
 {
 	id: string,
