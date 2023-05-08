@@ -1489,7 +1489,7 @@ export class Group extends AbstractSymCrypto
 
 	public async searchItem(data: string, last_fetched_item?: ListSearchItem, cat_id?: string): Promise<ListSearchItem[]>
 	{
-		const jwt = await this.user.getJwt();
+		const jwt = await this.getJwt();
 
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.id ?? "none";
@@ -1511,7 +1511,7 @@ export class Group extends AbstractSymCrypto
 
 	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string): Promise<ListContentItem[]>
 	{
-		const jwt = await this.user.getJwt();
+		const jwt = await this.getJwt();
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.id ?? "none";
 
