@@ -355,6 +355,12 @@ describe("Group Test", () => {
 		}
 	});
 
+	it("should fetch content in the group", async function() {
+		const list = await group.fetchContent(undefined, "jo");
+
+		chai.assert.equal(list.length, 0);
+	});
+
 	//child group
 
 	it("should create a child group", async function() {
