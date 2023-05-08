@@ -3,6 +3,7 @@
  * @since 2022/08/12
  */
 import {
+	CONTENT_FETCH_LIMIT,
 	FileCreateOutput,
 	FileMetaInformation,
 	FilePrepareCreateOutput,
@@ -1509,7 +1510,7 @@ export class Group extends AbstractSymCrypto
 		return handle_server_response(res);
 	}
 
-	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string): Promise<ListContentItem[]>
+	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT): Promise<ListContentItem[]>
 	{
 		const jwt = await this.getJwt();
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
@@ -1517,10 +1518,29 @@ export class Group extends AbstractSymCrypto
 
 		let url;
 
+		let limit_identifier = "small";
+
+		switch (limit) {
+			case CONTENT_FETCH_LIMIT.small:
+				limit_identifier = "small";
+				break;
+			case CONTENT_FETCH_LIMIT.medium:
+				limit_identifier = "med";
+				break;
+			case CONTENT_FETCH_LIMIT.large:
+				limit_identifier = "large";
+				break;
+			case CONTENT_FETCH_LIMIT.x_large:
+				limit_identifier = "xlarge";
+				break;
+			default:
+				break;
+		}
+
 		if (cat_id === undefined || cat_id === null || cat_id === "") {
-			url = this.base_url + "/api/v1/content/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id;
+			url = `${this.base_url}/api/v1/content/group/${this.data.group_id}/${limit_identifier}/all/${last_fetched_time}/${last_id}`;
 		} else {
-			url = this.base_url + "/api/v1/content/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id;
+			url = `${this.base_url}/api/v1/content/group/${this.data.group_id}/${limit_identifier}/${cat_id}/${last_fetched_time}/${last_id}`;
 		}
 
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);

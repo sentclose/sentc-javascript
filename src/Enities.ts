@@ -252,6 +252,13 @@ export interface ListContentItem
 	access_from_group?: string,
 }
 
+export const enum CONTENT_FETCH_LIMIT {
+	small = "small",
+	medium = "med",
+	large = "large",
+	x_large = "xlarge"
+}
+
 //______________________________________________________________________________________________________________________
 export interface ListSearchItem
 {
