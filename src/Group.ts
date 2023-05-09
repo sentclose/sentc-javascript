@@ -116,6 +116,9 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 			group.rank = out.rank;
 			group.key_update = out.key_update;
 			group.last_check_time = Date.now();
+
+			//update the group data in the storage
+			await storage.set(group_key, group);
 		}
 
 		return new Group(group, base_url, app_token, user);
