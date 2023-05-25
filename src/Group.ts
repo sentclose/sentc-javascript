@@ -23,7 +23,7 @@ import {
 	KeyRotationStartServerOutput,
 	ListContentItem,
 	ListSearchItem,
-	PrepareSearchableLight,
+	PrepareSearchableLight, SentcError,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -34,7 +34,6 @@ import {
 	group_create_connected_group,
 	group_decrypt_hmac_key,
 	group_decrypt_key,
-	group_done_key_rotation,
 	group_finish_key_rotation,
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
@@ -720,33 +719,27 @@ export class Group extends AbstractSymCrypto
 	 * The newest public key is used to encrypt the key for the starter.
 	 * If the starter joined via parent group then the parent group public key is used
 	 */
-	public async prepareKeyRotation()
+	public async prepareKeyRotation(sign = false)
 	{
 		//if this is a child group -> start the key rotation with the parent key!
 		const public_key = await this.getPublicKey();
 
-		return group_prepare_key_rotation(this.getNewestKey().group_key, public_key);
+		let sign_key = "";
+
+		if (sign) {
+			sign_key = await this.getSignKey();
+		}
+
+		return group_prepare_key_rotation(this.getNewestKey().group_key, public_key, sign_key, this.user.user_data.user_id);
 	}
 
-	public async doneKeyRotation(server_output: string)
-	{
-		const out = this.getKeyRotationServerOut(server_output);
-
-		const [public_key, private_key] = await Promise.all([
-			this.getPublicKey(),
-			this.getPrivateKey(out.encrypted_eph_key_key_id)
-		]);
-
-		return group_done_key_rotation(private_key, public_key, this.getNewestKey().group_key, server_output);
-	}
-
-	public async keyRotation()
+	public async keyRotation(sign = false)
 	{
 		const jwt = await this.user.getJwt();
 
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/key_rotation";
 
-		const body = await this.prepareKeyRotation();
+		const body = await this.prepareKeyRotation(sign);
 		const res = await make_req(HttpMethod.POST, url, this.app_token, body, jwt, this.data.access_by_group_as_member);
 
 		const out: KeyRotationStartServerOutput = handle_server_response(res);
@@ -755,7 +748,7 @@ export class Group extends AbstractSymCrypto
 		return this.getGroupKey(key_id, true);
 	}
 
-	public async finishKeyRotation()
+	public async finishKeyRotation(verify = false)
 	{
 		const jwt = await this.user.getJwt();
 
@@ -797,6 +790,22 @@ export class Group extends AbstractSymCrypto
 				// eslint-disable-next-line no-await-in-loop
 				const private_key = await this.getPrivateKey(key.encrypted_eph_key_key_id);
 
+				//get the verify key of the starter if it was set and verify is true
+				let verify_key = "";
+
+				if (verify && !!key.signed_by_user_id && !!key.signed_by_user_sign_key_id) {
+					try {
+						// eslint-disable-next-line no-await-in-loop
+						verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, key.signed_by_user_id, key.signed_by_user_sign_key_id);
+					} catch (e) {
+						//check if code === 100 -> user not found. if so ignore this error and use no verify key
+						const err: SentcError = JSON.parse(e);
+						if (err.status !== "server_100") {
+							throw e;
+						}
+					}
+				}
+
 				//await must be in this loop because we need the keys
 				// eslint-disable-next-line no-await-in-loop
 				await group_finish_key_rotation(
@@ -808,6 +817,7 @@ export class Group extends AbstractSymCrypto
 					pre_key.group_key,
 					public_key,
 					private_key,
+					verify_key,
 					this.data.access_by_group_as_member
 				);
 				

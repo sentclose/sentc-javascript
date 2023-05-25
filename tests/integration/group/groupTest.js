@@ -524,6 +524,86 @@ describe("Group Test", () => {
 		}
 	});
 
+	//__________________________________________________________________________________________________________________
+	//key rotation with sign
+
+	it("should start the key rotation with signed key", async function() {
+		const old_newest_key = group.data.newest_key_id;
+
+		await group.keyRotation(true);
+
+		const new_newest_key = group.data.newest_key_id;
+
+		chai.assert.notEqual(old_newest_key, new_newest_key);
+
+		const key = await sentc.getGroupPublicKey(group.data.group_id);
+
+		//should be the newest key
+		chai.assert.equal(key.id, group.data.newest_key_id);
+
+		//test the key
+		encrypted_string_by_user_0_after_kr = await group.encryptString("hello there £ Я a a 👍 1");
+	});
+
+	it("should finish the key rotation for the 2nd user without verify", async function() {
+		//this should work even if the user don't want to verify the key
+		const old_newest_key = group_for_user_1.data.newest_key_id;
+
+		await group_for_user_1.finishKeyRotation();
+
+		const new_newest_key = group_for_user_1.data.newest_key_id;
+
+		chai.assert.notEqual(old_newest_key, new_newest_key);
+
+		//test the key
+		const decrypted = await group_for_user_1.decryptString(encrypted_string_by_user_0);
+
+		chai.assert.equal(decrypted, "hello there £ Я a a 👍");
+
+		const decrypted_1 = await group_for_user_1.decryptString(encrypted_string_by_user_0_after_kr);
+
+		chai.assert.equal(decrypted_1, "hello there £ Я a a 👍 1");
+	});
+
+	//key rotation with sign and verify
+	it("should start the key rotation again with signed key", async function() {
+		const old_newest_key = group.data.newest_key_id;
+
+		await group.keyRotation(true);
+
+		const new_newest_key = group.data.newest_key_id;
+
+		chai.assert.notEqual(old_newest_key, new_newest_key);
+
+		const key = await sentc.getGroupPublicKey(group.data.group_id);
+
+		//should be the newest key
+		chai.assert.equal(key.id, group.data.newest_key_id);
+
+		//test the key
+		encrypted_string_by_user_0_after_kr = await group.encryptString("hello there £ Я a a 👍 1");
+	});
+
+	it("should finish the key rotation for the 2nd user with verify", async function() {
+		//this should work even if the user don't want to verify the key
+		const old_newest_key = group_for_user_1.data.newest_key_id;
+
+		await group_for_user_1.finishKeyRotation(true);
+
+		const new_newest_key = group_for_user_1.data.newest_key_id;
+
+		chai.assert.notEqual(old_newest_key, new_newest_key);
+
+		//test the key
+		const decrypted = await group_for_user_1.decryptString(encrypted_string_by_user_0);
+
+		chai.assert.equal(decrypted, "hello there £ Я a a 👍");
+
+		const decrypted_1 = await group_for_user_1.decryptString(encrypted_string_by_user_0_after_kr);
+
+		chai.assert.equal(decrypted_1, "hello there £ Я a a 👍 1");
+	});
+
 	after(async () => {
 		//clean up
 
