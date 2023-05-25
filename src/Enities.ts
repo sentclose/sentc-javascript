@@ -138,7 +138,11 @@ export interface GroupKeyRotationOut
 	pre_group_key_id: string,
 	server_output: string,
 	new_group_key_id: string,
-	encrypted_eph_key_key_id: string
+	encrypted_eph_key_key_id: string,
+
+	signed_by_user_id?: string,
+	signed_by_user_sign_key_id?: string,
+	signed_by_user_sign_key_alg?: string
 }
 
 export interface KeyRotationInput {
