@@ -175,7 +175,33 @@ describe("User tests", () => {
 		}
 	});
 
+	it("should create a safety number", async function() {
+		await user.createSafetyNumber();
+	});
+
+	/** @type User */
+	let user_2;
+
+	it("should create a combined safety number", async function() {
+		//first register new user
+		await sentc.register(username + "1", pw);
+		user_2 = await sentc.login(username + "1", pw);
+
+		const number = await user.createSafetyNumber({
+			user_id: user_2.user_data.user_id,
+			verify_key_id: user_2.getNewestKey().group_key_id
+		});
+
+		const number_2 = await user_2.createSafetyNumber({
+			user_id: user.user_data.user_id,
+			verify_key_id: user.getNewestKey().group_key_id
+		});
+
+		chai.assert.notEqual(number, number_2);
+	});
+
 	it("should delete the user", async function() {
 		await user.deleteUser(pw);
+		await user_2.deleteUser(pw);
 	});
 });
