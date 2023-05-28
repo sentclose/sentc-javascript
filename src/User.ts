@@ -364,13 +364,36 @@ export class User extends AbstractAsymCrypto
 
 	public async createSafetyNumber(user_to_compare?: {user_id: string, verify_key_id: string})
 	{
+		let verify_key_1;
+		let user_id_1;
+		let user_id_2;
+
 		let verify_key_2;
 
 		if (user_to_compare) {
-			verify_key_2 = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_to_compare.user_id, user_to_compare.verify_key_id);
+			const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_to_compare.user_id, user_to_compare.verify_key_id);
+
+			if (user_to_compare.user_id > this.user_data.user_id) {
+				//if the actual user is higher in the alphabet
+				verify_key_1 = this.getNewestKey().exported_verify_key;
+				user_id_1 = this.user_data.user_id;
+
+				verify_key_2 = verify_key;
+				user_id_2 = user_to_compare.user_id;
+			} else {
+				//if the actual user is lower
+				verify_key_1 = verify_key;
+				user_id_1 = user_to_compare.user_id;
+
+				verify_key_2 = this.getNewestKey().exported_verify_key;
+				user_id_2 = this.user_data.user_id;
+			}
+		} else {
+			verify_key_1 = this.getNewestKey().exported_verify_key;
+			user_id_1 = this.user_data.user_id;
 		}
 
-		return user_create_safety_number(this.getNewestKey().exported_verify_key, this.user_data.user_id, verify_key_2, user_to_compare?.user_id);
+		return user_create_safety_number(verify_key_1, user_id_1, verify_key_2, user_id_2);
 	}
 
 	//__________________________________________________________________________________________________________________

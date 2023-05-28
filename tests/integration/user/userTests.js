@@ -197,7 +197,8 @@ describe("User tests", () => {
 			verify_key_id: user.getNewestKey().group_key_id
 		});
 
-		chai.assert.notEqual(number, number_2);
+		//always the same user number
+		chai.assert.equal(number, number_2);
 	});
 
 	it("should delete the user", async function() {
