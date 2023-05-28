@@ -20,7 +20,7 @@ import {
 	group_prepare_create_group,
 	prepare_register_device,
 	register_device,
-	reset_password,
+	reset_password, user_create_safety_number,
 	user_device_key_session_upload,
 	user_finish_key_rotation,
 	user_key_rotation,
@@ -360,6 +360,17 @@ export class User extends AbstractAsymCrypto
 		const out: UserDeviceList[] = handle_server_response(res);
 
 		return out;
+	}
+
+	public async createSafetyNumber(user_to_compare?: {user_id: string, verify_key_id: string})
+	{
+		let verify_key_2;
+
+		if (user_to_compare) {
+			verify_key_2 = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_to_compare.user_id, user_to_compare.verify_key_id);
+		}
+
+		return user_create_safety_number(this.getNewestKey().exported_verify_key, this.user_data.user_id, verify_key_2, user_to_compare?.user_id);
 	}
 
 	//__________________________________________________________________________________________________________________
