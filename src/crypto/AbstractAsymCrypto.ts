@@ -3,7 +3,7 @@
  * @since 2022/08/19
  */
 import {AbstractCrypto} from "./AbstractCrypto";
-import {CryptoHead, CryptoRawOutput} from "../Enities";
+import {CryptoHead, CryptoRawOutput, UserPublicKeyData} from "../Enities";
 import {
 	decrypt_asymmetric,
 	decrypt_raw_asymmetric,
@@ -27,7 +27,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 	 *
 	 * @param reply_id
 	 */
-	abstract getPublicKey(reply_id: string): Promise<[string, string]>;
+	abstract getPublicKey(reply_id: string): Promise<UserPublicKeyData>;
 
 	/**
 	 * Get the own private key
@@ -55,7 +55,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 			sign_key = await this.getSignKey();
 		}
 
-		const out = encrypt_raw_asymmetric(key[0], data, sign_key);
+		const out = encrypt_raw_asymmetric(key.public_key, data, sign_key);
 
 		return {
 			head: out.get_head(),
@@ -92,7 +92,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 			sign_key = await this.getSignKey();
 		}
 
-		return encrypt_asymmetric(key[0], data, sign_key);
+		return encrypt_asymmetric(key.public_key, data, sign_key);
 	}
 
 	public decrypt(data: Uint8Array): Promise<Uint8Array>;
@@ -129,7 +129,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 			sign_key = await this.getSignKey();
 		}
 
-		return encrypt_string_asymmetric(key[0], data, sign_key);
+		return encrypt_string_asymmetric(key.public_key, data, sign_key);
 	}
 
 	public decryptString(data: string): Promise<string>;
@@ -158,24 +158,24 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 		const jwt = await this.getJwt();
 
-		const key_out = await generate_and_register_sym_key_by_public_key(this.base_url, this.app_token, jwt, key_data[0]);
+		const key_out = await generate_and_register_sym_key_by_public_key(this.base_url, this.app_token, jwt, key_data.public_key);
 
 		const key_id = key_out.get_key_id();
 		const key = key_out.get_key();
 
-		return new SymKey(this.base_url, this.app_token, key, key_id, key_data[1], await this.getSignKey());
+		return new SymKey(this.base_url, this.app_token, key, key_id, key_data.public_key_id, await this.getSignKey());
 	}
 
 	public async generateNonRegisteredKey(reply_id:string)
 	{
 		const key_data = await this.getPublicKey(reply_id);
 
-		const key_out = generate_non_register_sym_key_by_public_key(key_data[0]);
+		const key_out = generate_non_register_sym_key_by_public_key(key_data.public_key);
 
 		const encrypted_key = key_out.get_encrypted_key();
 		const key = key_out.get_key();
 
-		return [new SymKey(this.base_url, this.app_token, key, "non_register", key_data[1], await this.getSignKey()), encrypted_key];
+		return [new SymKey(this.base_url, this.app_token, key, "non_register", key_data.public_key_id, await this.getSignKey()), encrypted_key];
 	}
 
 	public async fetchGeneratedKey(key_id: string, master_key_id: string)
