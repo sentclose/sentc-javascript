@@ -5,7 +5,7 @@ import {
 	GroupInviteListItem, GroupKeyRotationOut,
 	GroupList, GroupOutDataHmacKeys, HttpMethod,
 	USER_KEY_STORAGE_NAMES,
-	UserData, UserDeviceList, UserKeyData
+	UserData, UserDeviceList, UserKeyData, UserPublicKeyData
 } from "./Enities";
 import {
 	change_password,
@@ -69,7 +69,11 @@ export async function getUser(deviceIdentifier: string, user_data: UserData, enc
 		storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + deviceIdentifier, store_user_data),
 		storage.set(USER_KEY_STORAGE_NAMES.actualUser, deviceIdentifier),
 		//save always the newest public key
-		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, {key: user_data.user_keys[0].exported_public_key, id: user_data.user_keys[0].group_key_id})
+		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, <UserPublicKeyData>{
+			public_key: user_data.user_keys[0].exported_public_key,
+			public_key_id: user_data.user_keys[0].group_key_id,
+			verified: true
+		})
 	]);
 
 	return user;
@@ -127,11 +131,9 @@ export class User extends AbstractAsymCrypto
 		return key.private_key;
 	}
 
-	async getPublicKey(reply_id: string): Promise<[string, string]>
+	getPublicKey(reply_id: string): Promise<UserPublicKeyData>
 	{
-		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, reply_id);
-
-		return [public_key.key, public_key.id];
+		return Sentc.getUserPublicKeyData(this.base_url, this.app_token, reply_id);
 	}
 
 	getNewestHmacKey(): string

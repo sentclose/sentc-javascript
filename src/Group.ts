@@ -338,17 +338,19 @@ export class Group extends AbstractSymCrypto
 	{
 		const key_count = this.data.keys.length;
 
-		let public_key;
+		let public_key: string;
 
 		if (group) {
-			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.key;
 		} else {
-			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.public_key;
 		}
 
 		const [key_string] = this.prepareKeys(page);
 
-		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, rank, this.data.rank);
+		return group_prepare_keys_for_new_member(public_key, key_string, key_count, rank, this.data.rank);
 	}
 
 	public invite(user_id: string, rank?: number)
@@ -383,12 +385,14 @@ export class Group extends AbstractSymCrypto
 
 	private async inviteUserInternally(user_id: string, rank?: number, auto = false, group = false, re_invite = false)
 	{
-		let public_key;
+		let public_key: string;
 
 		if (group) {
-			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.key;
 		} else {
-			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.public_key;
 		}
 
 		const key_count = this.data.keys.length;
@@ -408,7 +412,7 @@ export class Group extends AbstractSymCrypto
 			auto,
 			group,
 			re_invite,
-			public_key.key,
+			public_key,
 			key_string, this.data.access_by_group_as_member
 		);
 
@@ -432,7 +436,7 @@ export class Group extends AbstractSymCrypto
 				this.data.group_id,
 				auto,
 				session_id,
-				public_key.key,
+				public_key,
 				next_keys[0],
 				this.data.access_by_group_as_member
 			));
@@ -484,12 +488,14 @@ export class Group extends AbstractSymCrypto
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeys();
 
-		let public_key;
+		let public_key: string;
 
 		if (user_type === 2) {
-			public_key = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.key;
 		} else {
-			public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			const k = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.public_key;
 		}
 
 		const session_id = await group_accept_join_req(
@@ -501,7 +507,7 @@ export class Group extends AbstractSymCrypto
 			key_count,
 			rank,
 			this.data.rank,
-			public_key.key,
+			public_key,
 			key_string,
 			this.data.access_by_group_as_member
 		);
@@ -524,7 +530,7 @@ export class Group extends AbstractSymCrypto
 				jwt,
 				this.data.group_id,
 				session_id,
-				public_key.key,
+				public_key,
 				next_keys[0],
 				this.data.access_by_group_as_member
 			));

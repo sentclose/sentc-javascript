@@ -29,6 +29,13 @@ export const enum USER_KEY_STORAGE_NAMES
 	sym_key = "sym_key"
 }
 
+export interface UserPublicKeyData {
+	public_key: string,
+	public_key_id: string,
+	public_key_sig_key_id?: string,
+	verified: boolean
+}
+
 export interface UserKeyData
 {
 	private_key: string,

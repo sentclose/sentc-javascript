@@ -19,7 +19,7 @@ import init, {
 	register,
 	register_device_start,
 	user_fetch_public_key,
-	user_fetch_verify_key,
+	user_fetch_verify_key, user_verify_user_public_key,
 	UserData as WasmUserData
 } from "sentc_wasm";
 import {
@@ -28,7 +28,7 @@ import {
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData
+	UserKeyData, UserPublicKeyData
 } from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
@@ -422,6 +422,11 @@ export class Sentc
 		return this.getGroupPublicKeyData(this.options.base_url, this.options.app_token, group_id);
 	}
 
+	public static verifyUserPublicKey(user_id: string, public_key: UserPublicKeyData, force = false)
+	{
+		return this.verifyUsersPublicKey(this.options.base_url, this.options.app_token, user_id, public_key, force);
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	/**
@@ -506,13 +511,13 @@ export class Sentc
 	 * @param app_token
 	 * @param user_id
 	 */
-	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
+	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string): Promise<UserPublicKeyData>
 	{
 		const storage = await this.getStore();
 
 		const store_key = USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_id;
 
-		const user = await storage.getItem<{key: string, id: string}>(store_key);
+		const user = await storage.getItem<UserPublicKeyData>(store_key);
 
 		if (user) {
 			return user;
@@ -520,10 +525,11 @@ export class Sentc
 
 		const fetched_data = await user_fetch_public_key(base_url, app_token, user_id);
 
-		const key = fetched_data.get_public_key();
-		const id = fetched_data.get_public_key_id();
+		const public_key = fetched_data.get_public_key();
+		const public_key_id = fetched_data.get_public_key_id();
+		const public_key_sig_key_id = fetched_data.get_public_key_sig_key_id();
 
-		const returns = {key, id};
+		const returns: UserPublicKeyData = {public_key, public_key_id, public_key_sig_key_id, verified: false};
 
 		await storage.set(store_key, returns);
 
@@ -578,5 +584,29 @@ export class Sentc
 		await storage.set(store_key, returns);
 
 		return returns;
+	}
+
+	public static async verifyUsersPublicKey(base_url: string, app_token: string, user_id: string, public_key: UserPublicKeyData, force = false)
+	{
+		if (public_key.verified && !force) {
+			return true;
+		}
+
+		if (!public_key.public_key_sig_key_id) {
+			return false;
+		}
+
+		const verify_key = await this.getUserVerifyKey(user_id, public_key.public_key_sig_key_id);
+
+		const verify = user_verify_user_public_key(verify_key, public_key.public_key);
+
+		public_key.verified = verify;
+
+		//store the new value
+		const storage = await this.getStore();
+		const store_key = USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_id;
+		await storage.set(store_key, public_key);
+
+		return verify;
 	}
 }

@@ -233,6 +233,23 @@ describe("User tests", () => {
 		chai.assert.equal(number_3, number_4);
 	});
 
+	it("should verify a public key", async function() {
+		const user_id = user_2.user_data.user_id;
+
+		//first remove the cached public key from the store of user 2 because after login the public key will be set as verified true
+
+		/** @type StorageInterface */
+		const storage = await sentc.getStore();
+		const store_key =  "user_public_key_id_" + user_id;
+		await storage.delete(store_key);
+
+		const public_key = await sentc.getUserPublicKey(user_id);
+		
+		const verify = await sentc.verifyUserPublicKey(user_id, public_key);
+
+		chai.assert.equal(verify, true);
+	});
+
 	it("should delete the user", async function() {
 		await user.deleteUser(pw);
 		await user_2.deleteUser(pw);
