@@ -46,6 +46,7 @@ export interface UserKeyData
 	sign_key: string,
 	verify_key: string,
 	exported_public_key: string,
+	exported_public_key_sig_key_id?: string,
 	exported_verify_key: string,
 }
 

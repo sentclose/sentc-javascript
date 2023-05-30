@@ -72,8 +72,13 @@ export async function getUser(deviceIdentifier: string, user_data: UserData, enc
 		storage.set(USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_data.user_id, <UserPublicKeyData>{
 			public_key: user_data.user_keys[0].exported_public_key,
 			public_key_id: user_data.user_keys[0].group_key_id,
-			verified: true
-		})
+			public_key_sig_key_id: user_data.user_keys[0].exported_public_key_sig_key_id,
+			verified: false
+		}),
+		storage.set(
+			USER_KEY_STORAGE_NAMES.userVerifyKey + "_id_" + user_data.user_id + "_key_id_" + user_data.user_keys[0].group_key_id,
+			user_data.user_keys[0].exported_verify_key
+		)
 	]);
 
 	return user;
