@@ -11,9 +11,7 @@ import {
 	change_password,
 	decode_jwt,
 	delete_device,
-	delete_user,
-	done_fetch_user_key,
-	fetch_user_key,
+	delete_user, done_fetch_user_key,
 	file_delete_file,
 	file_file_name_update,
 	group_create_group, group_decrypt_hmac_key,
@@ -172,16 +170,6 @@ export class User extends AbstractAsymCrypto
 		return Promise.resolve(this.getNewestSignKey());
 	}
 
-	public doneFetchUserKey(server_output: string)
-	{
-		const user_keys: UserKeyData = done_fetch_user_key(this.user_data.device.private_key, server_output);
-
-		const index = this.user_data.user_keys.length;
-		this.user_data.user_keys.push(user_keys);
-
-		this.user_data.key_map.set(user_keys.group_key_id, index);
-	}
-
 	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
 	{
 		const keys = [];
@@ -204,7 +192,23 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		const user_keys: UserKeyData = await fetch_user_key(this.base_url, this.app_token, jwt, key_id, this.user_data.device.private_key);
+		const url = this.base_url + "/api/v1/user/user_keys/key/" + key_id;
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
+
+		const fetched_keys = done_fetch_user_key(this.user_data.device.private_key, res);
+		
+		const user_keys: UserKeyData = {
+			exported_verify_key: fetched_keys.get_exported_verify_key(),
+			group_key_id: fetched_keys.get_group_key_id(),
+			verify_key: fetched_keys.get_verify_key(),
+			time: +fetched_keys.get_time(),
+			sign_key: fetched_keys.get_sign_key(),
+			public_key: fetched_keys.get_public_key(),
+			exported_public_key_sig_key_id: fetched_keys.get_exported_public_key_sig_key_id(),
+			exported_public_key: fetched_keys.get_exported_public_key(),
+			group_key: fetched_keys.get_group_key(),
+			private_key: fetched_keys.get_private_key()
+		};
 
 		const index = this.user_data.user_keys.length;
 		this.user_data.user_keys.push(user_keys);
