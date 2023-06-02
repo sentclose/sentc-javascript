@@ -728,7 +728,7 @@ export class Group extends AbstractSymCrypto
 		//if this is a child group -> start the key rotation with the parent key!
 		const public_key = await this.getPublicKey();
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -795,7 +795,7 @@ export class Group extends AbstractSymCrypto
 				const private_key = await this.getPrivateKey(key.encrypted_eph_key_key_id);
 
 				//get the verify key of the starter if it was set and verify is true
-				let verify_key = "";
+				let verify_key: string | undefined;
 
 				if (verify && !!key.signed_by_user_id && !!key.signed_by_user_sign_key_id) {
 					try {
@@ -1298,7 +1298,7 @@ export class Group extends AbstractSymCrypto
 		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
-	private async getFileMetaInfo(file_id: string, verify_key = "", downloader: Downloader): Promise<[FileMetaInformation, SymKey]>
+	private async getFileMetaInfo(file_id: string, downloader: Downloader, verify_key?: string): Promise<[FileMetaInformation, SymKey]>
 	{
 		//in an extra function to use the downloader
 
@@ -1335,11 +1335,11 @@ export class Group extends AbstractSymCrypto
 	 */
 	public downloadFileMetaInfo(file_id: string, verify_key: string): Promise<[FileMetaInformation, SymKey]>;
 
-	public downloadFileMetaInfo(file_id: string, verify_key = "")
+	public downloadFileMetaInfo(file_id: string, verify_key?: string)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
-		return this.getFileMetaInfo(file_id, verify_key, downloader);
+		return this.getFileMetaInfo(file_id, downloader, verify_key);
 	}
 
 	/**
@@ -1372,7 +1372,7 @@ export class Group extends AbstractSymCrypto
 	 */
 	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
 
-	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
@@ -1447,11 +1447,11 @@ export class Group extends AbstractSymCrypto
 	 */
 	public downloadFile(file_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public async downloadFile(file_id: string, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this.user, this.data.group_id, this.data.access_by_group_as_member);
 
-		const [file_meta, key] = await this.getFileMetaInfo(file_id, verify_key, downloader);
+		const [file_meta, key] = await this.getFileMetaInfo(file_id, downloader, verify_key);
 
 		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
 

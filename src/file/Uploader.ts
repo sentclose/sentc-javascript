@@ -72,7 +72,7 @@ export class Uploader
 	{
 		const jwt = await this.user.getJwt();
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.user.getSignKey();

@@ -652,7 +652,7 @@ export class User extends AbstractAsymCrypto
 		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
-	private async getFileMetaInfo(file_id: string, verify_key = "", downloader: Downloader): Promise<[FileMetaInformation, SymKey]>
+	private async getFileMetaInfo(file_id: string, downloader: Downloader, verify_key?: string): Promise<[FileMetaInformation, SymKey]>
 	{
 		//1. get the file info
 		const file_meta = await downloader.downloadFileMetaInformation(file_id);
@@ -687,11 +687,11 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFileMetaInfo(file_id: string, verify_key: string): Promise<[FileMetaInformation, SymKey]>;
 
-	public downloadFileMetaInfo(file_id: string, verify_key = "")
+	public downloadFileMetaInfo(file_id: string, verify_key?: string)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
-		return this.getFileMetaInfo(file_id, verify_key, downloader);
+		return this.getFileMetaInfo(file_id, downloader, verify_key);
 	}
 
 	/**
@@ -724,7 +724,7 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
 
-	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
@@ -805,11 +805,11 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFile(file_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public async downloadFile(file_id: string, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
-		const [file_meta, key] = await this.getFileMetaInfo(file_id, verify_key, downloader);
+		const [file_meta, key] = await this.getFileMetaInfo(file_id, downloader, verify_key);
 
 		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
 

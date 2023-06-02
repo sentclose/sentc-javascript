@@ -76,7 +76,7 @@ export class SymKey
 
 	public encryptRaw(data: Uint8Array, sign = false): CryptoRawOutput
 	{
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = this.sign_key;
@@ -94,7 +94,7 @@ export class SymKey
 
 	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Uint8Array;
 
-	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Uint8Array
+	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key?: string): Uint8Array
 	{
 		return decrypt_raw_symmetric(this.key, encrypted_data, head, verify_key);
 	}
@@ -107,7 +107,7 @@ export class SymKey
 
 	public encrypt(data: Uint8Array, sign = false): Uint8Array
 	{
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = this.sign_key;
@@ -120,7 +120,7 @@ export class SymKey
 
 	public decrypt(data: Uint8Array, verify_key: string): Uint8Array;
 
-	public decrypt(data: Uint8Array, verify_key = ""): Uint8Array
+	public decrypt(data: Uint8Array, verify_key?: string): Uint8Array
 	{
 		return decrypt_symmetric(this.key, data, verify_key);
 	}
@@ -133,7 +133,7 @@ export class SymKey
 
 	public encryptString(data: string, sign = false): string
 	{
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = this.sign_key;
@@ -146,7 +146,7 @@ export class SymKey
 
 	public decryptString(data: string, verify_key: string): string;
 
-	public decryptString(data: string, verify_key = ""): string
+	public decryptString(data: string, verify_key?: string): string
 	{
 		return decrypt_string_symmetric(this.key, data, verify_key);
 	}

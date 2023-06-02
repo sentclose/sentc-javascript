@@ -89,19 +89,19 @@ async function downloadFile(file_id: string, group_for_user = 0, selected_user =
 	let url: string, file_data: FileMetaInformation, content_key: SymKey;
 
 	if (group_for_user === 1) {
-		[url, file_data, content_key] = await group.downloadFile(file_id, "", get_progress);
+		[url, file_data, content_key] = await group.downloadFile(file_id, undefined, get_progress);
 	}
 
 	if (group_for_user === 2) {
-		[url, file_data, content_key] = await group_for_user_2.downloadFile(file_id, "", get_progress);
+		[url, file_data, content_key] = await group_for_user_2.downloadFile(file_id, undefined, get_progress);
 	}
 
 	if (selected_user === 1) {
-		[url, file_data, content_key] = await user.downloadFile(file_id, "", get_progress);
+		[url, file_data, content_key] = await user.downloadFile(file_id, undefined, get_progress);
 	}
 
 	if (selected_user === 2) {
-		[url, file_data, content_key] = await user_2.downloadFile(file_id, "", get_progress);
+		[url, file_data, content_key] = await user_2.downloadFile(file_id, undefined, get_progress);
 	}
 
 	const a = document.createElement("a");
