@@ -1526,8 +1526,10 @@ export class Group extends AbstractSymCrypto
 		return handle_server_response(res);
 	}
 
-	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT): Promise<ListContentItem[]>
+	public async fetchContent(data: {last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT}): Promise<ListContentItem[]>
 	{
+		const {limit, cat_id, last_fetched_item} = data;
+
 		const jwt = await this.getJwt();
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.id ?? "none";
