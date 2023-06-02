@@ -138,7 +138,7 @@ describe("User tests", () => {
 		//and now end register
 		await user.registerDevice(device_register_result);
 
-		new_device_1 = await sentc.login(device_identifier, device_pw);
+		new_device_1 = await sentc.login(device_identifier_1, device_pw_1);
 	});
 
 	it("should get the same key id for all devices", function() {
@@ -171,7 +171,8 @@ describe("User tests", () => {
 		} catch (e) {
 			const json = JSON.parse(e);
 
-			chai.assert.equal(json.status, "server_112");
+			//device identifier not found
+			chai.assert.equal(json.status, "server_100");
 		}
 	});
 

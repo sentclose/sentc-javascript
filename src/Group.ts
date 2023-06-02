@@ -33,12 +33,10 @@ import {
 	group_create_child_group,
 	group_create_connected_group,
 	group_decrypt_hmac_key,
-	group_decrypt_key,
+	group_decrypt_key, group_extract_group_key, group_extract_group_keys,
 	group_finish_key_rotation,
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
-	group_get_group_key,
-	group_get_group_keys,
 	group_invite_user,
 	group_invite_user_session,
 	group_join_user_session,
@@ -1041,16 +1039,12 @@ export class Group extends AbstractSymCrypto
 		const keys: GroupKey[] = [];
 
 		while (next_fetch) {
+			const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/keys/" + last_item.time + "/" + last_item.group_key_id;
 			// eslint-disable-next-line no-await-in-loop
-			const fetchedKeys: GroupOutDataKeys[] = await group_get_group_keys(
-				this.base_url,
-				this.app_token,
-				jwt,
-				this.data.group_id,
-				last_item.time,
-				last_item.group_key_id,
-				this.data.access_by_group_as_member
-			);
+			const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+			// eslint-disable-next-line no-await-in-loop
+			const fetchedKeys: GroupOutDataKeys[] = group_extract_group_keys(res);
 
 			// eslint-disable-next-line no-await-in-loop
 			const decrypted_key = await this.decryptKey(fetchedKeys);
@@ -1137,7 +1131,10 @@ export class Group extends AbstractSymCrypto
 		if (key_index === undefined) {
 			const jwt = await this.user.getJwt();
 
-			const fetched_key = await group_get_group_key(this.base_url, this.app_token, jwt, this.data.group_id, key_id, this.data.access_by_group_as_member);
+			const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/key/" + key_id;
+			const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+			const fetched_key = await group_extract_group_key(res);
 
 			const key: GroupOutDataKeys = {
 				key_data: fetched_key.get_key_data(),
@@ -1529,8 +1526,10 @@ export class Group extends AbstractSymCrypto
 		return handle_server_response(res);
 	}
 
-	public async fetchContent(last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT): Promise<ListContentItem[]>
+	public async fetchContent(data: {last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT}): Promise<ListContentItem[]>
 	{
+		const {limit, cat_id, last_fetched_item} = data;
+
 		const jwt = await this.getJwt();
 		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
 		const last_id = last_fetched_item?.id ?? "none";

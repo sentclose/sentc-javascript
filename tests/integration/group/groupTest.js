@@ -356,7 +356,7 @@ describe("Group Test", () => {
 	});
 
 	it("should fetch content in the group", async function() {
-		const list = await group.fetchContent(undefined, "jo");
+		const list = await group.fetchContent({cat_id: "jo"});
 
 		chai.assert.equal(list.length, 0);
 	});
