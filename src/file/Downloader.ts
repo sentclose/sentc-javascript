@@ -4,10 +4,7 @@
  */
 import {Mutex} from "./Mutex";
 import {handle_server_response, make_req, StorageFactory, StorageInterface} from "../core";
-import {
-	decrypt_string_symmetric,
-	file_download_and_decrypt_file_part, file_download_and_decrypt_file_part_start
-} from "sentc_wasm";
+import {file_download_and_decrypt_file_part, file_download_and_decrypt_file_part_start} from "sentc_wasm";
 import {User} from "../User";
 import {FileMetaFetched, FileMetaInformation, HttpMethod, PartListItem} from "../Enities";
 import {Sentc} from "../Sentc";
@@ -65,10 +62,6 @@ export class Downloader
 		private readonly group_as_member?: string
 	) {
 		//the base url can be different when serving the files from a different storage
-
-		if (!group_as_member) {
-			this.group_as_member = "";
-		}
 
 		Downloader.init();
 	}
@@ -149,21 +142,21 @@ export class Downloader
 		part_list: PartListItem[],
 		content_key: string,
 		updateProgressCb?: (progress: number) => void,
-		verify_key = ""
+		verify_key?: string
 	) {
 		const unlock = await Downloader.mutex.lock();
 		const storage = await Downloader.getStorage();
 
 		Downloader.cancel_download = false;
 
-		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
+		const url_prefix = Sentc.options?.file_part_url ?? undefined;
 
 		let next_file_key: string = content_key;
 
 		for (let i = 0; i < part_list.length; i++) {
 			const external = part_list[i].extern_storage === true;
 
-			const part_url_base = (external) ? url_prefix : "";
+			const part_url_base = (external) ? url_prefix : undefined;
 
 			let part;
 
@@ -171,12 +164,26 @@ export class Downloader
 				if (i === 0) {
 					//first part
 					// eslint-disable-next-line no-await-in-loop
-					const res = await file_download_and_decrypt_file_part_start(this.base_url, part_url_base, this.app_token, part_list[i].part_id, content_key, verify_key);
+					const res = await file_download_and_decrypt_file_part_start(
+						this.base_url,
+						part_url_base,
+						this.app_token,
+						part_list[i].part_id,
+						content_key,
+						verify_key
+					);
 					next_file_key = res.get_next_file_key();
 					part = res.get_file();
 				} else {
 					// eslint-disable-next-line no-await-in-loop
-					const res = await file_download_and_decrypt_file_part(this.base_url, part_url_base, this.app_token, part_list[i].part_id, next_file_key, verify_key);
+					const res = await file_download_and_decrypt_file_part(
+						this.base_url,
+						part_url_base,
+						this.app_token,
+						part_list[i].part_id,
+						next_file_key,
+						verify_key
+					);
 					next_file_key = res.get_next_file_key();
 					part = res.get_file();
 				}
@@ -221,26 +228,5 @@ export class Downloader
 		unlock();
 
 		return url;
-	}
-
-	public downloadFile(file_id: string, content_key: string): Promise<[string, FileMetaInformation]>;
-
-	public downloadFile(file_id: string, content_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation]>;
-
-	public downloadFile(file_id: string, content_key: string, updateProgressCb: (progress: number) => void | undefined, verify_key: string): Promise<[string, FileMetaInformation]>;
-
-	public async downloadFile(file_id: string, content_key: string, updateProgressCb?: (progress: number) => void, verify_key = ""): Promise<[string, FileMetaInformation]>
-	{
-		//make a req to get the file info
-		const file_meta = await this.downloadFileMetaInformation(file_id);
-
-		file_meta.file_name = decrypt_string_symmetric(content_key, file_meta.encrypted_file_name, verify_key);
-
-		const url = await this.downloadFileParts(file_meta.part_list, content_key, updateProgressCb, verify_key);
-
-		return [
-			url,
-			file_meta
-		];
 	}
 }

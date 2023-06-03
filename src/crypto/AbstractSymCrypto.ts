@@ -38,7 +38,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key = await this.getSymKeyToEncrypt();
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -56,7 +56,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 
 	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
 
-	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key?: string): Promise<Uint8Array>
 	{
 		const de_head: CryptoHead = deserialize_head_from_string(head);
 
@@ -75,7 +75,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key = await this.getSymKeyToEncrypt();
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -95,7 +95,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const key = await this.getSymKeyById(head.id);
 
 		if (!head?.sign || !verify || !user_id) {
-			return decrypt_symmetric(key, data, "");
+			return decrypt_symmetric(key, data);
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
@@ -113,7 +113,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key = await this.getSymKeyToEncrypt();
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -133,7 +133,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const key = await this.getSymKeyById(head.id);
 
 		if (!head?.sign || !verify || !user_id) {
-			return decrypt_string_symmetric(key, data, "");
+			return decrypt_string_symmetric(key, data);
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);

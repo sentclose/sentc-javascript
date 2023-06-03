@@ -103,7 +103,7 @@ export interface GroupOutDataHmacKeys {
 export interface GroupData
 {
 	group_id: string,
-	parent_group_id: string,
+	parent_group_id?: string,
 	from_parent: boolean,	//describe if this group was fetched by parent group or normal fetch
 	rank: number,
 	key_update:boolean,
@@ -113,7 +113,7 @@ export interface GroupData
 	key_map: Map<string, number>,	//save the index of the key to this key id
 	newest_key_id: string,	//get the id of the newest group key
 	access_by_parent_group: string | undefined,
-	access_by_group_as_member: string | "", //empty string -> access directly
+	access_by_group_as_member?: string,
 	is_connected_group: boolean,
 	hmac_keys: string[],
 	last_check_time: number,

@@ -1,24 +1,33 @@
 import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
 import {
 	FileCreateOutput,
-	FileMetaInformation, FilePrepareCreateOutput,
-	GroupInviteListItem, GroupKeyRotationOut,
-	GroupList, GroupOutDataHmacKeys, HttpMethod,
+	FileMetaInformation,
+	FilePrepareCreateOutput,
+	GroupInviteListItem,
+	GroupKeyRotationOut,
+	GroupList,
+	GroupOutDataHmacKeys,
+	HttpMethod,
 	USER_KEY_STORAGE_NAMES,
-	UserData, UserDeviceList, UserKeyData, UserPublicKeyData
+	UserData,
+	UserDeviceList,
+	UserKeyData,
+	UserPublicKeyData
 } from "./Enities";
 import {
 	change_password,
 	decode_jwt,
 	delete_device,
-	delete_user, done_fetch_user_key,
-	file_delete_file,
+	delete_user,
+	done_fetch_user_key,
 	file_file_name_update,
-	group_create_group, group_decrypt_hmac_key,
+	group_create_group,
+	group_decrypt_hmac_key,
 	group_prepare_create_group,
 	prepare_register_device,
 	register_device,
-	reset_password, user_create_safety_number,
+	reset_password,
+	user_create_safety_number,
 	user_device_key_session_upload,
 	user_finish_key_rotation,
 	user_key_rotation,
@@ -544,10 +553,10 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey(), "");
+		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey());
 	}
 
-	public getGroup(group_id: string, group_as_member = "")
+	public getGroup(group_id: string, group_as_member?: string)
 	{
 		return getGroup(group_id, this.base_url, this.app_token, this, false, group_as_member);
 	}
@@ -652,7 +661,7 @@ export class User extends AbstractAsymCrypto
 		return uploader.checkFileUpload(file, content_key.key, session_id, sign);
 	}
 
-	private async getFileMetaInfo(file_id: string, verify_key = "", downloader: Downloader): Promise<[FileMetaInformation, SymKey]>
+	private async getFileMetaInfo(file_id: string, downloader: Downloader, verify_key?: string): Promise<[FileMetaInformation, SymKey]>
 	{
 		//1. get the file info
 		const file_meta = await downloader.downloadFileMetaInformation(file_id);
@@ -687,11 +696,11 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFileMetaInfo(file_id: string, verify_key: string): Promise<[FileMetaInformation, SymKey]>;
 
-	public downloadFileMetaInfo(file_id: string, verify_key = "")
+	public downloadFileMetaInfo(file_id: string, verify_key?: string)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
-		return this.getFileMetaInfo(file_id, verify_key, downloader);
+		return this.getFileMetaInfo(file_id, downloader, verify_key);
 	}
 
 	/**
@@ -724,7 +733,7 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key: string, updateProgressCb: (progress: number) => void): Promise<string>;
 
-	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public downloadFileWithMetaInfo(key: SymKey, file_meta: FileMetaInformation, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
@@ -805,11 +814,11 @@ export class User extends AbstractAsymCrypto
 	 */
 	public downloadFile(file_id: string, verify_key: string, updateProgressCb: (progress: number) => void): Promise<[string, FileMetaInformation, SymKey]>;
 
-	public async downloadFile(file_id: string, verify_key = "", updateProgressCb?: (progress: number) => void)
+	public async downloadFile(file_id: string, verify_key?: string, updateProgressCb?: (progress: number) => void)
 	{
 		const downloader = new Downloader(this.base_url, this.app_token, this);
 
-		const [file_meta, key] = await this.getFileMetaInfo(file_id, verify_key, downloader);
+		const [file_meta, key] = await this.getFileMetaInfo(file_id, downloader, verify_key);
 
 		const url = await downloader.downloadFileParts(file_meta.part_list, key.key, updateProgressCb, verify_key);
 
@@ -831,6 +840,10 @@ export class User extends AbstractAsymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return file_delete_file(this.base_url, this.app_token, jwt, file_id, "", "");
+		const url = this.base_url + "/api/v1/file/" + file_id;
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt);
+
+		return handle_general_server_response(res);
 	}
 }

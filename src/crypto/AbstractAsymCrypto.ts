@@ -49,7 +49,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 	{
 		const key = await this.getPublicKey(reply_id);
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -67,7 +67,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
 
-	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key?: string): Promise<Uint8Array>
 	{
 		const de_head: CryptoHead = deserialize_head_from_string(head);
 
@@ -86,7 +86,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 	{
 		const key = await this.getPublicKey(reply_id);
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -105,7 +105,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		const key = await this.getPrivateKey(head.id);
 
 		if (!head?.sign || !verify || !user_id) {
-			return decrypt_asymmetric(key, data, "");
+			return decrypt_asymmetric(key, data);
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
@@ -119,11 +119,11 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 
 	public encryptString(data: string, reply_id:string, sign: true): Promise<string>;
 
-	public async encryptString(data: string, reply_id:string, sign = false): Promise<string>
+	public async encryptString(data: string, reply_id: string, sign = false): Promise<string>
 	{
 		const key = await this.getPublicKey(reply_id);
 
-		let sign_key = "";
+		let sign_key: string | undefined;
 
 		if (sign) {
 			sign_key = await this.getSignKey();
@@ -142,7 +142,7 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		const key = await this.getPrivateKey(head.id);
 
 		if (!head?.sign || !verify || !user_id) {
-			return decrypt_string_asymmetric(key, data, "");
+			return decrypt_string_asymmetric(key, data);
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
