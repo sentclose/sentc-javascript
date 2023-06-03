@@ -28,7 +28,6 @@ import {
 	UserKeyData
 } from "./Enities";
 import {
-	file_delete_file,
 	group_accept_join_req,
 	group_create_child_group,
 	group_create_connected_group,
@@ -85,13 +84,20 @@ export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string
  * Get a group, from the storage or the server
  *
  */
-export async function getGroup(group_id: string, base_url: string, app_token: string, user: User, parent = false, group_as_member = "", rek = false)
-{
+export async function getGroup(
+	group_id: string,
+	base_url: string,
+	app_token: string,
+	user: User,
+	parent = false,
+	group_as_member?: string,
+	rek = false
+) {
 	const storage = await Sentc.getStore();
 
 	let user_id;
 
-	if (group_as_member === "") {
+	if (!group_as_member || group_as_member === "") {
 		user_id = user.user_data.user_id;
 	} else {
 		user_id = group_as_member;
@@ -134,7 +140,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	//check parent or group as member access if the groups are already fetched
 	const access_by_parent_group = out.get_access_by_parent_group();
-	let access_by_group_as_member = out.get_access_by_group_as_member();
+	const access_by_group_as_member = out.get_access_by_group_as_member();
 
 	const parent_group_id = out.get_parent_group_id();
 
@@ -146,9 +152,6 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 			//no group as member flag
 			await getGroup(access_by_group_as_member, base_url, app_token, user);
 		}
-	} else {
-		//set the default value
-		access_by_group_as_member = "";
 	}
 
 	if (access_by_parent_group) {
@@ -411,7 +414,8 @@ export class Group extends AbstractSymCrypto
 			group,
 			re_invite,
 			public_key,
-			key_string, this.data.access_by_group_as_member
+			key_string,
+			this.data.access_by_group_as_member
 		);
 
 		if (session_id === "") {
@@ -564,7 +568,7 @@ export class Group extends AbstractSymCrypto
 	private async getPublicKey()
 	{
 		//normal user access
-		if (!this.data.from_parent && (!this.data.access_by_group_as_member || this.data.access_by_group_as_member === "")) {
+		if (!this.data.from_parent && !this.data.access_by_group_as_member) {
 			return this.user.getNewestPublicKey();
 		}
 
@@ -574,7 +578,7 @@ export class Group extends AbstractSymCrypto
 			//choose the right user id.
 			// when the user is accessing the group over a parent which is also access by a connected group
 			let user_id;
-			if (this.data.access_by_group_as_member === "") {
+			if (!this.data.access_by_group_as_member) {
 				user_id = this.user.user_data.user_id;
 			} else {
 				user_id = this.data.access_by_group_as_member;
@@ -655,13 +659,13 @@ export class Group extends AbstractSymCrypto
 	 */
 	private async getPrivateKey(private_key_id: string)
 	{
-		if (!this.data.from_parent && (!this.data.access_by_group_as_member || this.data.access_by_group_as_member === "")) {
+		if (!this.data.from_parent && !this.data.access_by_group_as_member) {
 			return this.user.getPrivateKey(private_key_id);
 		}
 
 		if (this.data.from_parent) {
 			let user_id;
-			if (this.data.access_by_group_as_member === "") {
+			if (!this.data.access_by_group_as_member) {
 				user_id = this.user.user_data.user_id;
 			} else {
 				user_id = this.data.access_by_group_as_member;
@@ -756,8 +760,14 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.user.getJwt();
 
-		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, this.data.access_by_group_as_member);
-
+		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			this.data.access_by_group_as_member
+		);
+		
 		if (keys.length === 0) {
 			return; 
 		}
@@ -845,7 +855,7 @@ export class Group extends AbstractSymCrypto
 		} while (next_round && rounds_left > 0);
 
 		let user_id;
-		if (this.data.access_by_group_as_member === "") {
+		if (!this.data.access_by_group_as_member) {
 			user_id = this.user.user_data.user_id;
 		} else {
 			user_id = this.data.access_by_group_as_member;
@@ -878,7 +888,7 @@ export class Group extends AbstractSymCrypto
 		handle_general_server_response(res);
 		
 		let actual_user_id;
-		if (this.data.access_by_group_as_member === "") {
+		if (!this.data.access_by_group_as_member) {
 			actual_user_id = this.user.user_data.user_id;
 		} else {
 			actual_user_id = this.data.access_by_group_as_member;
@@ -1157,7 +1167,7 @@ export class Group extends AbstractSymCrypto
 			}
 
 			let actual_user_id;
-			if (this.data.access_by_group_as_member === "") {
+			if (!this.data.access_by_group_as_member) {
 				actual_user_id = this.user.user_data.user_id;
 			} else {
 				actual_user_id = this.data.access_by_group_as_member;
@@ -1471,7 +1481,11 @@ export class Group extends AbstractSymCrypto
 	{
 		const jwt = await this.getJwt();
 
-		return file_delete_file(this.base_url, this.app_token, jwt, file_id, this.data.group_id, this.data.access_by_group_as_member);
+		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/file/" + file_id;
+
+		const res = await make_req(HttpMethod.DELETE, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
+
+		return handle_general_server_response(res);
 	}
 
 	//__________________________________________________________________________________________________________________

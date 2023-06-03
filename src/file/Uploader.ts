@@ -32,10 +32,6 @@ export class Uploader
 		private readonly group_as_member?: string,
 		private chunk_size = 1024 * 1024 * 4
 	) {
-		if (!group_as_member) {
-			this.group_as_member = "";
-		}
-
 		if (group_id && group_id !== "") {
 			this.belongs_to_id = group_id;
 			this.belongs_to = "\"Group\"";	//the double "" are important for rust serde json
@@ -43,7 +39,6 @@ export class Uploader
 			this.belongs_to_id = other_user_id;
 			this.belongs_to = "\"User\"";
 		} else {
-			this.belongs_to_id = "";
 			this.belongs_to = "\"None\"";
 		}
 	}
@@ -158,7 +153,7 @@ export class Uploader
 			this.belongs_to_id,
 			this.belongs_to,
 			file.name,
-			this.group_id ? this.group_id : "",
+			this.group_id,
 			this.group_as_member
 		);
 

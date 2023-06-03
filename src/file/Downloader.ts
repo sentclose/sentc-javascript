@@ -63,10 +63,6 @@ export class Downloader
 	) {
 		//the base url can be different when serving the files from a different storage
 
-		if (!group_as_member) {
-			this.group_as_member = "";
-		}
-
 		Downloader.init();
 	}
 
