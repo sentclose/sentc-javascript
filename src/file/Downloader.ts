@@ -149,14 +149,14 @@ export class Downloader
 
 		Downloader.cancel_download = false;
 
-		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
+		const url_prefix = Sentc.options?.file_part_url ?? undefined;
 
 		let next_file_key: string = content_key;
 
 		for (let i = 0; i < part_list.length; i++) {
 			const external = part_list[i].extern_storage === true;
 
-			const part_url_base = (external) ? url_prefix : "";
+			const part_url_base = (external) ? url_prefix : undefined;
 
 			let part;
 
@@ -176,7 +176,8 @@ export class Downloader
 					part = res.get_file();
 				} else {
 					// eslint-disable-next-line no-await-in-loop
-					const res = await file_download_and_decrypt_file_part(this.base_url,
+					const res = await file_download_and_decrypt_file_part(
+						this.base_url,
 						part_url_base,
 						this.app_token,
 						part_list[i].part_id,

@@ -82,7 +82,7 @@ export class Uploader
 		//reset it just in case it was true
 		Uploader.cancel_upload = false;
 
-		const url_prefix = (Sentc.options?.file_part_url) ? Sentc.options?.file_part_url : "";
+		const url_prefix = Sentc.options?.file_part_url ?? undefined;
 
 		//each file is encrypted by a new key and this key is encrypted by the pre key
 		let next_file_key: string = content_key;
