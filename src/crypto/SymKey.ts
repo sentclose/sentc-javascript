@@ -1,16 +1,14 @@
-import {CryptoRawOutput, USER_KEY_STORAGE_NAMES} from "../Enities";
+import {CryptoRawOutput, HttpMethod, USER_KEY_STORAGE_NAMES} from "../Enities";
 import {
 	decrypt_raw_symmetric,
 	decrypt_string_symmetric,
-	decrypt_symmetric,
-	delete_sym_key,
+	decrypt_symmetric, done_fetch_sym_key, done_fetch_sym_key_by_private_key,
 	encrypt_raw_symmetric,
 	encrypt_string_symmetric,
-	encrypt_symmetric,
-	get_sym_key_by_id,
-	get_sym_key_by_id_by_private_key
+	encrypt_symmetric
 } from "sentc_wasm";
 import {Sentc} from "../Sentc";
+import {handle_general_server_response, make_req} from "../core";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>
@@ -28,8 +26,10 @@ export async function fetchSymKey(base_url:string, app_token: string, key_id: st
 		return new SymKey(base_url, app_token, sym_key_raw, key_id, master_key_id, sign_key);
 	}
 
-	const key_out = await get_sym_key_by_id(base_url, app_token, key_id, master_key);
+	const res = await make_req(HttpMethod.GET, base_url + "/api/v1/keys/sym_key/" + key_id, app_token);
 
+	const key_out = done_fetch_sym_key(master_key, res, false);
+	
 	const sym_key = new SymKey(base_url, app_token, key_out, key_id, master_key_id, sign_key);
 
 	await storage.set(cache_key, key_out);
@@ -48,13 +48,29 @@ export async function fetchSymKeyByPrivateKey(base_url:string, app_token: string
 		return new SymKey(base_url, app_token, sym_key_raw, key_id, master_key_id, sign_key);
 	}
 
-	const key_out = await get_sym_key_by_id_by_private_key(base_url, app_token, key_id, master_key);
+	const res = await make_req(HttpMethod.GET, base_url + "/api/v1/keys/sym_key/" + key_id, app_token);
+
+	const key_out = done_fetch_sym_key_by_private_key(master_key, res, false);
 
 	const sym_key = new SymKey(base_url, app_token, key_out, key_id, master_key_id, sign_key);
 
 	await storage.set(cache_key, key_out);
 
 	return sym_key;
+}
+
+export function getNonRegisteredKey(master_key: string, key: string, master_key_id: string, sign_key: string)
+{
+	const key_out = done_fetch_sym_key(master_key, key, true);
+
+	return new SymKey("", "", key_out, "non_register", master_key_id, sign_key);
+}
+
+export function getNonRegisteredKeyByPrivateKey(private_key: string, key: string, master_key_id: string, sign_key: string)
+{
+	const key_out = done_fetch_sym_key_by_private_key(private_key, key, true);
+
+	return new SymKey("", "", key_out, "non_register", master_key_id, sign_key);
 }
 
 export class SymKey
@@ -153,8 +169,20 @@ export class SymKey
 
 	//__________________________________________________________________________________________________________________
 
-	public deleteKey(jwt: string)
+	public async deleteKey(jwt: string)
 	{
-		return delete_sym_key(this.base_url, this.app_token, jwt, this.key_id);
+		if (this.key_id === "non_register") {
+			return;
+		}
+
+		const res = await make_req(
+			HttpMethod.DELETE,
+			this.base_url + "/api/v1/keys/sym_key/" + this.key_id,
+			this.app_token,
+			undefined,
+			jwt
+		);
+
+		return handle_general_server_response(res);
 	}
 }

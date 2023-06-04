@@ -109,7 +109,8 @@ export class Downloader
 			belongs_to_type: file_meta.belongs_to_type,
 			file_id: file_meta.file_id,
 			master_key_id: file_meta.master_key_id,
-			key_id: file_meta.key_id,
+			encrypted_key: file_meta.encrypted_key,
+			encrypted_key_alg: file_meta.encrypted_key_alg,
 			part_list,
 			encrypted_file_name: file_meta.encrypted_file_name
 		};

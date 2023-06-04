@@ -43,10 +43,17 @@ export class Uploader
 		}
 	}
 
-	public prepareFileRegister(file: File, content_key: string, master_key_id: string)
+	public prepareFileRegister(file: File, content_key: string, encrypted_content_key: string, master_key_id: string)
 	{
-		const out = file_prepare_register_file(master_key_id, content_key, this.belongs_to_id, this.belongs_to, file.name);
-
+		const out = file_prepare_register_file(
+			master_key_id,
+			content_key,
+			encrypted_content_key,
+			this.belongs_to_id,
+			this.belongs_to,
+			file.name
+		);
+		
 		const encrypted_file_name = out.get_encrypted_file_name();
 		const server_input = out.get_server_input();
 
@@ -139,7 +146,7 @@ export class Uploader
 		}
 	}
 
-	public async uploadFile(file: File, content_key: string, master_key_id: string, sign = false)
+	public async uploadFile(file: File, content_key: string, encrypted_content_key: string, master_key_id: string, sign = false)
 	{
 		const jwt = await this.user.getJwt();
 
@@ -150,6 +157,7 @@ export class Uploader
 			jwt,
 			master_key_id,
 			content_key,
+			encrypted_content_key,
 			this.belongs_to_id,
 			this.belongs_to,
 			file.name,

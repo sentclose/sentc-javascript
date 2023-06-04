@@ -7,7 +7,7 @@ import {
 	split_head_and_encrypted_data, split_head_and_encrypted_string
 } from "sentc_wasm";
 import {AbstractCrypto} from "./AbstractCrypto";
-import {fetchSymKey, SymKey} from "./SymKey";
+import {fetchSymKey, getNonRegisteredKey, SymKey} from "./SymKey";
 import {Sentc} from "../Sentc";
 
 /**
@@ -184,6 +184,13 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const key = await this.getSymKeyById(master_key_id);
 
 		return fetchSymKey(this.base_url, this.app_token, key_id, key, master_key_id, await this.getSignKey());
+	}
+
+	public async getNonRegisteredKey(master_key_id: string, key: string)
+	{
+		const master_key = await this.getSymKeyById(master_key_id);
+
+		return getNonRegisteredKey(master_key, key, master_key_id, await this.getSignKey());
 	}
 
 	//__________________________________________________________________________________________________________________
