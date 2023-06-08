@@ -21,8 +21,8 @@ import init, {
 	refresh_jwt,
 	register,
 	register_device_start,
-	user_fetch_public_key,
-	user_fetch_verify_key,
+	user_extract_public_key_data,
+	user_extract_verify_key_data,
 	user_verify_user_public_key,
 	UserData as WasmUserData
 } from "sentc_wasm";
@@ -534,7 +534,9 @@ export class Sentc
 			return user;
 		}
 
-		const fetched_data = await user_fetch_public_key(base_url, app_token, user_id);
+		const url = `${base_url}/api/v1/user/${user_id}/public_key`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+		const fetched_data = user_extract_public_key_data(res);
 
 		const public_key = fetched_data.get_public_key();
 		const public_key_id = fetched_data.get_public_key_id();
@@ -567,7 +569,9 @@ export class Sentc
 			return user;
 		}
 
-		const key = await user_fetch_verify_key(base_url, app_token, user_id, verify_key_id);
+		const url = `${base_url}/api/v1/user/${user_id}/verify_key/${verify_key_id}`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+		const key = user_extract_verify_key_data(res);
 		
 		await storage.set(store_key, key);
 
