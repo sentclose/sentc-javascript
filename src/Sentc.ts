@@ -7,30 +7,36 @@ import init, {
 	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
-	done_register, done_register_device_start, generate_user_register_data, group_get_public_key_data,
+	done_register,
+	done_register_device_start,
+	generate_user_register_data, group_extract_public_key_data,
 	init_user,
 	InitInput,
 	login,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
-	prepare_register, prepare_register_device_start,
+	prepare_register,
+	prepare_register_device_start,
 	refresh_jwt,
 	register,
 	register_device_start,
 	user_fetch_public_key,
-	user_fetch_verify_key, user_verify_user_public_key,
+	user_fetch_verify_key,
+	user_verify_user_public_key,
 	UserData as WasmUserData
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
+	HttpMethod,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData, UserPublicKeyData
+	UserKeyData,
+	UserPublicKeyData
 } from "./Enities";
-import {ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
 
 export const enum REFRESH_ENDPOINT {
@@ -574,7 +580,10 @@ export class Sentc
 			return group;
 		}
 
-		const fetched_data = await group_get_public_key_data(base_url, app_token, group_id);
+		const url = `${base_url}/api/v1/group/${group_id}/public_key`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+
+		const fetched_data = await group_extract_public_key_data(res);
 
 		const key = fetched_data.get_public_key();
 		const id = fetched_data.get_public_key_id();
