@@ -23,7 +23,8 @@ import {
 	KeyRotationStartServerOutput,
 	ListContentItem,
 	ListSearchItem,
-	PrepareSearchableLight, SentcError,
+	PrepareSearchableLight,
+	SentcError,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -32,10 +33,11 @@ import {
 	group_create_child_group,
 	group_create_connected_group,
 	group_decrypt_hmac_key,
-	group_decrypt_key, group_extract_group_key, group_extract_group_keys,
+	group_decrypt_key, group_extract_group_data,
+	group_extract_group_key,
+	group_extract_group_keys,
 	group_finish_key_rotation,
 	group_get_done_key_rotation_server_input,
-	group_get_group_data,
 	group_invite_user,
 	group_invite_user_session,
 	group_join_user_session,
@@ -127,13 +129,9 @@ export async function getGroup(
 		return new Group(group, base_url, app_token, user);
 	}
 
-	const out = await group_get_group_data(
-		base_url,
-		app_token,
-		jwt,
-		group_id,
-		group_as_member
-	);
+	const url = base_url + "/api/v1/group/" + group_id;
+	const res = await make_req(HttpMethod.GET, url, app_token, undefined, jwt, group_as_member);
+	const out = group_extract_group_data(res);
 
 	//save the fetched keys but only decrypt them when creating the group obj
 	const fetched_keys: GroupOutDataKeys[] = out.get_keys();
