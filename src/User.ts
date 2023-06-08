@@ -19,8 +19,7 @@ import {
 	decode_jwt,
 	delete_device,
 	delete_user,
-	done_fetch_user_key,
-	file_file_name_update,
+	done_fetch_user_key, file_prepare_file_name_update,
 	group_create_group,
 	group_decrypt_hmac_key,
 	group_prepare_create_group,
@@ -842,11 +841,17 @@ export class User extends AbstractAsymCrypto
 		];
 	}
 
-	public async updateFileName(file_id: string, content_key: SymKey, file_name: string)
+	public async updateFileName(file_id: string, content_key: SymKey, file_name?: string)
 	{
 		const jwt = await this.getJwt();
 
-		return file_file_name_update(this.base_url, this.app_token, jwt, file_id, content_key.key, file_name);
+		const body = file_prepare_file_name_update(content_key.key, file_name);
+
+		const url = `${this.base_url}/api/v1/file/${file_id}`;
+
+		const res = await make_req(HttpMethod.PUT, url, this.app_token, body, jwt);
+
+		return handle_general_server_response(res);
 	}
 
 	public async deleteFile(file_id: string)
