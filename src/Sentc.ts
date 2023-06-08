@@ -4,12 +4,12 @@
  */
 
 import init, {
-	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
 	done_register,
 	done_register_device_start,
-	generate_user_register_data, group_extract_public_key_data,
+	generate_user_register_data,
+	group_extract_public_key_data,
 	init_user,
 	InitInput,
 	login,
@@ -184,13 +184,18 @@ export class Sentc
 	 *
 	 * @param userIdentifier
 	 */
-	public static checkUserIdentifierAvailable(userIdentifier: string)
+	public static async checkUserIdentifierAvailable(userIdentifier: string)
 	{
-		if (userIdentifier === "") {
+		const body = this.prepareCheckUserIdentifierAvailable(userIdentifier);
+
+		if (!body) {
 			return false;
 		}
 
-		return check_user_identifier_available(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
+		const url = `${Sentc.options.base_url}/api/v1/exists`;
+		const res = await make_req(HttpMethod.POST, url, Sentc.options.app_token, body);
+
+		return this.doneCheckUserIdentifierAvailable(res);
 	}
 
 	/**
