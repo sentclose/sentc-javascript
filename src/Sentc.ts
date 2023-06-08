@@ -4,33 +4,39 @@
  */
 
 import init, {
-	check_user_identifier_available,
 	done_check_user_identifier_available,
 	done_login,
-	done_register, done_register_device_start, generate_user_register_data, group_get_public_key_data,
+	done_register,
+	done_register_device_start,
+	generate_user_register_data,
+	group_extract_public_key_data,
 	init_user,
 	InitInput,
 	login,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
-	prepare_register, prepare_register_device_start,
+	prepare_register,
+	prepare_register_device_start,
 	refresh_jwt,
 	register,
 	register_device_start,
-	user_fetch_public_key,
-	user_fetch_verify_key, user_verify_user_public_key,
+	user_extract_public_key_data,
+	user_extract_verify_key_data,
+	user_verify_user_public_key,
 	UserData as WasmUserData
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
+	HttpMethod,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData, UserPublicKeyData
+	UserKeyData,
+	UserPublicKeyData
 } from "./Enities";
-import {ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
 
 export const enum REFRESH_ENDPOINT {
@@ -178,13 +184,18 @@ export class Sentc
 	 *
 	 * @param userIdentifier
 	 */
-	public static checkUserIdentifierAvailable(userIdentifier: string)
+	public static async checkUserIdentifierAvailable(userIdentifier: string)
 	{
-		if (userIdentifier === "") {
+		const body = this.prepareCheckUserIdentifierAvailable(userIdentifier);
+
+		if (!body) {
 			return false;
 		}
 
-		return check_user_identifier_available(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
+		const url = `${Sentc.options.base_url}/api/v1/exists`;
+		const res = await make_req(HttpMethod.POST, url, Sentc.options.app_token, body);
+
+		return this.doneCheckUserIdentifierAvailable(res);
 	}
 
 	/**
@@ -523,7 +534,9 @@ export class Sentc
 			return user;
 		}
 
-		const fetched_data = await user_fetch_public_key(base_url, app_token, user_id);
+		const url = `${base_url}/api/v1/user/${user_id}/public_key`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+		const fetched_data = user_extract_public_key_data(res);
 
 		const public_key = fetched_data.get_public_key();
 		const public_key_id = fetched_data.get_public_key_id();
@@ -556,7 +569,9 @@ export class Sentc
 			return user;
 		}
 
-		const key = await user_fetch_verify_key(base_url, app_token, user_id, verify_key_id);
+		const url = `${base_url}/api/v1/user/${user_id}/verify_key/${verify_key_id}`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+		const key = user_extract_verify_key_data(res);
 		
 		await storage.set(store_key, key);
 
@@ -574,7 +589,10 @@ export class Sentc
 			return group;
 		}
 
-		const fetched_data = await group_get_public_key_data(base_url, app_token, group_id);
+		const url = `${base_url}/api/v1/group/${group_id}/public_key`;
+		const res = await make_req(HttpMethod.GET, url, app_token);
+
+		const fetched_data = await group_extract_public_key_data(res);
 
 		const key = fetched_data.get_public_key();
 		const id = fetched_data.get_public_key_id();

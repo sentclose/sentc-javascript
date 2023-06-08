@@ -2,7 +2,9 @@ import {CryptoRawOutput, HttpMethod, USER_KEY_STORAGE_NAMES} from "../Enities";
 import {
 	decrypt_raw_symmetric,
 	decrypt_string_symmetric,
-	decrypt_symmetric, done_fetch_sym_key, done_fetch_sym_key_by_private_key,
+	decrypt_symmetric,
+	done_fetch_sym_key,
+	done_fetch_sym_key_by_private_key, done_fetch_sym_keys,
 	encrypt_raw_symmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric
@@ -71,6 +73,20 @@ export function getNonRegisteredKeyByPrivateKey(private_key: string, key: string
 	const key_out = done_fetch_sym_key_by_private_key(private_key, key, true);
 
 	return new SymKey("", "", key_out, "non_register", master_key_id, sign_key);
+}
+
+export async function getKeysForMasterKey(base_url:string, app_token: string, master_key_id: string, last_fetched_time: string, last_key_id: string, master_key: string )
+{
+	const url = `${base_url}/api/v1/keys/sym_key/${master_key_id}/${last_fetched_time}/${last_key_id}`;
+
+	const res = await make_req(HttpMethod.GET, url, app_token);
+	const out = done_fetch_sym_keys(master_key, res);
+
+	const keys = out.get_keys();
+	const last_time = out.get_last_fetched_time();
+	const last_id = out.get_last_key_id();
+
+	return [keys, last_time, last_id];
 }
 
 export class SymKey
