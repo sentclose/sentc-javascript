@@ -251,6 +251,45 @@ describe("User tests", () => {
 		chai.assert.equal(verify, true);
 	});
 
+	//encrypt tests
+	const string = "hello there £ Я a a";
+	let encryptedString;
+
+	it("should encrypt string data for another user", async function() {
+		encryptedString = await user.encryptString(string, user_2.user_data.user_id);
+
+		//should not decrypt it again
+		try {
+			await user.decryptString(encryptedString);
+		} catch (e) {
+			const json = JSON.parse(e);
+
+			chai.assert.equal(json.status, "server_304");
+		}
+	});
+
+	it("should decrypt the string for the other user", async function() {
+		const decrypted = await user_2.decryptString(encryptedString);
+
+		chai.assert.equal(decrypted, string);
+	});
+
+	it("should encrypt string with sign", async function() {
+		encryptedString = await user.encryptString(string, user_2.user_data.user_id, true);
+	});
+
+	it("should decrypt the signed string without verify", async function() {
+		const decrypted = await user_2.decryptString(encryptedString);
+
+		chai.assert.equal(decrypted, string);
+	});
+
+	it("should decrypt the string with verify", async function() {
+		const decrypted = await user_2.decryptString(encryptedString, true, user.user_data.user_id);
+
+		chai.assert.equal(decrypted, string);
+	});
+
 	it("should delete the user", async function() {
 		await user.deleteUser(pw);
 		await user_2.deleteUser(pw);
