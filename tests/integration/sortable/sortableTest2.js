@@ -1,9 +1,4 @@
-//with generated key
-
-const chai = window.chai;
-
-describe("Sortable test with generated key", () => {
-
+describe("Sortable test 2", () => {
 	const sentc = window.Sentc.default;
 
 	before(async () => {

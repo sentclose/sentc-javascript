@@ -1,5 +1,3 @@
-const chai = window.chai;
-
 describe("Sortable tests", () => {
 	const username0 = "test0";
 	const username1 = "test1";
