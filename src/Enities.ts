@@ -100,6 +100,11 @@ export interface GroupOutDataHmacKeys {
 	key_data: string
 }
 
+export interface GroupOutDataSortableKeys {
+	group_key_id: string,
+	key_data: string
+}
+
 export interface GroupData
 {
 	group_id: string,
@@ -116,6 +121,7 @@ export interface GroupData
 	access_by_group_as_member?: string,
 	is_connected_group: boolean,
 	hmac_keys: string[],
+	sortable_keys: string[],
 	last_check_time: number,
 }
 

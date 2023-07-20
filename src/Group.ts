@@ -16,7 +16,7 @@ import {
 	GroupKeyRotationOut,
 	GroupList,
 	GroupOutDataHmacKeys,
-	GroupOutDataKeys,
+	GroupOutDataKeys, GroupOutDataSortableKeys,
 	GroupUserListItem,
 	HttpMethod,
 	KeyRotationInput,
@@ -33,7 +33,9 @@ import {
 	group_create_child_group,
 	group_create_connected_group,
 	group_decrypt_hmac_key,
-	group_decrypt_key, group_extract_group_data,
+	group_decrypt_key,
+	group_decrypt_sortable_key,
+	group_extract_group_data,
 	group_extract_group_key,
 	group_extract_group_keys,
 	group_finish_key_rotation,
@@ -48,7 +50,11 @@ import {
 	group_prepare_update_rank,
 	prepare_create_searchable,
 	prepare_create_searchable_light,
-	prepare_search
+	prepare_search,
+	sortable_encrypt_number,
+	sortable_encrypt_raw_number,
+	sortable_encrypt_raw_string,
+	sortable_encrypt_string
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -175,6 +181,7 @@ export async function getGroup(
 		access_by_parent_group,
 		is_connected_group: out.get_is_connected_group(),
 		hmac_keys: [],
+		sortable_keys: [],
 		last_check_time: Date.now()
 	};
 
@@ -212,6 +219,12 @@ export async function getGroup(
 	const decrypted_hmac_keys = await group_obj.decryptHmacKeys(hmac_keys);
 	group_obj.data.hmac_keys = decrypted_hmac_keys;
 	group_data.hmac_keys = decrypted_hmac_keys;
+
+	const sortable_keys = out.get_sortable_keys();
+
+	const decrypted_sortable_keys = await group_obj.decryptSortableKeys(sortable_keys);
+	group_obj.data.sortable_keys = decrypted_sortable_keys;
+	group_data.sortable_keys = decrypted_sortable_keys;
 	
 	await Promise.all([
 		//store the group data
@@ -1127,6 +1140,24 @@ export class Group extends AbstractSymCrypto
 		return keys;
 	}
 
+	public async decryptSortableKeys(fetchedKeys: GroupOutDataSortableKeys[])
+	{
+		const keys = [];
+
+		for (let i = 0; i < fetchedKeys.length; i++) {
+			const fetched_key = fetchedKeys[i];
+
+			// eslint-disable-next-line no-await-in-loop
+			const group_key = await this.getSymKeyById(fetched_key.group_key_id);
+
+			const decrypted_key = group_decrypt_sortable_key(group_key, fetched_key.key_data);
+
+			keys.push(decrypted_key);
+		}
+
+		return keys;
+	}
+
 	private prepareKeys(page = 0): [string, boolean]
 	{
 		return prepareKeys(this.data.keys, page);
@@ -1221,6 +1252,11 @@ export class Group extends AbstractSymCrypto
 	getNewestHmacKey(): string
 	{
 		return this.data.hmac_keys[0];
+	}
+
+	getNewestSortableKey(): string
+	{
+		return this.data.sortable_keys[0];
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -1558,6 +1594,44 @@ export class Group extends AbstractSymCrypto
 
 		return handle_server_response(res);
 	}
+
+	//__________________________________________________________________________________________________________________
+	//sortable
+
+	public encryptSortableRawNumber(number: number)
+	{
+		const key = this.getNewestSortableKey();
+
+		return sortable_encrypt_raw_number(key, BigInt(number));
+	}
+
+	public encryptSortableNumber(number: number)
+	{
+		const key = this.getNewestSortableKey();
+
+		const out = sortable_encrypt_number(key, BigInt(number));
+
+		return [out.get_number(), out.get_alg(), out.get_key_id()];
+	}
+
+	public encryptSortableRawString(data: string)
+	{
+		const key = this.getNewestSortableKey();
+
+		return sortable_encrypt_raw_string(key, data);
+	}
+
+	public encryptSortableString(data: string)
+	{
+		const key = this.getNewestSortableKey();
+
+		const out = sortable_encrypt_string(key, data);
+
+		return [out.get_number(), out.get_alg(), out.get_key_id()];
+	}
+
+	//__________________________________________________________________________________________________________________
+	//content
 
 	public async fetchContent(data: {last_fetched_item?: ListContentItem, cat_id?: string, limit?: CONTENT_FETCH_LIMIT}): Promise<ListContentItem[]>
 	{
