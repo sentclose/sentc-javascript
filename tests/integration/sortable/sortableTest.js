@@ -65,6 +65,51 @@ describe("Sortable tests", () => {
 		chai.assert.equal(c, c1);
 	});
 
+	const str_values = ["a", "az", "azzz", "b", "ba", "baaa", "o", "oe", "z", "zaaa"];
+	const encrypted_values = [];
+
+	it("should encrypt a string", function() {
+		for (let i = 0; i < str_values.length; i++) {
+			const v = str_values[i];
+
+			encrypted_values.push(group.encryptSortableRawString(v));
+		}
+
+		//check the number
+		let past_item = BigInt(0);
+
+		for (let i = 0; i < encrypted_values.length; i++) {
+			const item = encrypted_values[i];
+
+			chai.assert.equal(past_item < item, true);
+			past_item = item;
+		}
+	});
+
+	it("should encrypt the same values", function() {
+		const new_values = [];
+
+		for (let i = 0; i < str_values.length; i++) {
+			const v = str_values[i];
+
+			new_values.push(group_for_user_1.encryptSortableRawString(v));
+		}
+
+		//check the number
+		let past_item = BigInt(0);
+
+		for (let i = 0; i < new_values.length; i++) {
+			const item = new_values[i];
+			const check_item = encrypted_values[i];
+
+			chai.assert.equal(past_item < item, true);
+
+			chai.assert.equal(check_item, item);
+
+			past_item = item;
+		}
+	});
+
 	after(async () => {
 		//clean up
 
