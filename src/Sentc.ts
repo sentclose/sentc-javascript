@@ -5,7 +5,6 @@
 
 import init, {
 	done_check_user_identifier_available,
-	done_login,
 	done_register,
 	done_register_device_start,
 	generate_user_register_data,
@@ -14,8 +13,6 @@ import init, {
 	InitInput,
 	login,
 	prepare_check_user_identifier_available,
-	prepare_login,
-	prepare_login_start,
 	prepare_register,
 	prepare_register_device_start,
 	refresh_jwt,
@@ -294,40 +291,6 @@ export class Sentc
 		}
 
 		return register_device_start(Sentc.options.base_url, Sentc.options.app_token, device_identifier, password);
-	}
-
-	/**
-	 * Make the first login request to get the salt
-	 */
-	public static prepareLoginStart(userIdentifier: string)
-	{
-		return prepare_login_start(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
-	}
-
-	/**
-	 * Prepare the data to done login process.
-	 *
-	 * prepare_login_server_output is the result of the prepareLoginStart function
-	 *
-	 * Send the auth key string to the server and use the master_key_encryption_key for the done login function
-	 */
-	public static prepareLogin(userIdentifier: string, password: string, prepare_login_server_output: string)
-	{
-		const data = prepare_login(userIdentifier, password, prepare_login_server_output);
-
-		return [data.get_auth_key(), data.get_master_key_encryption_key()];
-	}
-
-	/**
-	 * Get and decrypt the user data from the done_login_server_output output
-	 *
-	 * prepare login is required
-	 */
-	public static doneLogin(deviceIdentifier: string, master_key_encryption_key: string, done_login_server_output: string)
-	{
-		const out = done_login(master_key_encryption_key, done_login_server_output);
-
-		return this.buildUserObj(deviceIdentifier, out);
 	}
 
 	private static buildUserObj(deviceIdentifier: string, out: WasmUserData)
