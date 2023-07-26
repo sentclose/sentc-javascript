@@ -281,21 +281,6 @@ export const enum CONTENT_FETCH_LIMIT {
 }
 
 //______________________________________________________________________________________________________________________
-export interface ListSearchItem
-{
-	id: string,
-	item_ref: string,
-	time: number
-}
-
-export interface PrepareSearchableLight
-{
-	hashes: string[],
-	alg: string,
-	key_id: string
-}
-
-//______________________________________________________________________________________________________________________
 
 export interface ServerOutput<T> {
 	status: boolean,

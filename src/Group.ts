@@ -22,13 +22,13 @@ import {
 	KeyRotationInput,
 	KeyRotationStartServerOutput,
 	ListContentItem,
-	ListSearchItem,
-	PrepareSearchableLight,
 	SentcError,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
 import {
+	create_searchable,
+	create_searchable_raw,
 	group_accept_join_req,
 	group_create_child_group,
 	group_create_connected_group,
@@ -48,13 +48,11 @@ import {
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
 	group_prepare_update_rank,
-	prepare_create_searchable,
-	prepare_create_searchable_light,
-	prepare_search,
 	sortable_encrypt_number,
 	sortable_encrypt_raw_number,
 	sortable_encrypt_raw_string,
-	sortable_encrypt_string
+	sortable_encrypt_string,
+	search
 } from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
@@ -1546,53 +1544,27 @@ export class Group extends AbstractSymCrypto
 	//__________________________________________________________________________________________________________________
 	//searchable encryption
 
-	public prepareCreateSearchableItemLight(data: string, full: boolean, limit?: number): PrepareSearchableLight
+	public createSearchRaw(data: string, full?: boolean, limit?: number): string[]
 	{
 		const key = this.getNewestHmacKey();
 
-		const out = prepare_create_searchable_light(key, data, full, limit);
-
-		return {
-			hashes: <string[]>out.get_hashes(),
-			alg: out.get_alg(),
-			key_id: out.get_key_id()
-		};
+		return create_searchable_raw(key, data, full === undefined ? false : full, limit);
 	}
 
-	public prepareCreateSearchableItem(item_ref: string, data: string, full: boolean, category?: string, limit?: number)
+	public createSearch(data: string, full?: boolean, limit?: number): [string[], string, string]
 	{
 		const key = this.getNewestHmacKey();
+		
+		const out = create_searchable(key, data, full === undefined ? false : full, limit);
 
-		return prepare_create_searchable(key, item_ref, category ?? "", data, full, limit);
+		return [out.get_hashes(), out.get_alg(), out.get_key_id()];
 	}
 
-	public prepareSearchItem(data: string)
+	public search(data: string): string
 	{
 		const key = this.getNewestHmacKey();
-
-		return prepare_search(key, data);
-	}
-
-	public async searchItem(data: string, last_fetched_item?: ListSearchItem, cat_id?: string): Promise<ListSearchItem[]>
-	{
-		const jwt = await this.getJwt();
-
-		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
-		const last_id = last_fetched_item?.id ?? "none";
-
-		const search_str = this.prepareSearchItem(data);
-
-		let url;
-
-		if (cat_id === undefined || cat_id === null || cat_id === "") {
-			url = this.base_url + "/api/v1/search/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
-		} else {
-			url = this.base_url + "/api/v1/search/group/" + this.data.group_id + "/" + cat_id + "/" + last_fetched_time + "/" + last_id + "?search=" + search_str;
-		}
-
-		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
-
-		return handle_server_response(res);
+		
+		return search(key, data);
 	}
 
 	//__________________________________________________________________________________________________________________
@@ -1605,7 +1577,7 @@ export class Group extends AbstractSymCrypto
 		return sortable_encrypt_raw_number(key, BigInt(number));
 	}
 
-	public encryptSortableNumber(number: number)
+	public encryptSortableNumber(number: number): [BigInt, string, string]
 	{
 		const key = this.getNewestSortableKey();
 
@@ -1620,8 +1592,8 @@ export class Group extends AbstractSymCrypto
 
 		return sortable_encrypt_raw_string(key, data);
 	}
-
-	public encryptSortableString(data: string)
+	
+	public encryptSortableString(data: string): [BigInt, string, string]
 	{
 		const key = this.getNewestSortableKey();
 
