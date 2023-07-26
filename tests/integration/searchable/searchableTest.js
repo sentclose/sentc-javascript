@@ -66,14 +66,14 @@ describe("Sortable tests", () => {
 		chai.assert.equal(search_str_full[0], str_item);
 
 		//should be in the parts
-		search_str.includes(str_item);
+		chai.assert.equal(search_str.includes(str_item), true);
 	});
 
 	it("should search item in parts", function() {
 		const str_item = group_for_user_1.search("123");
 		chai.assert.notEqual(search_str_full[0], str_item);
 
-		search_str.includes(str_item);
+		chai.assert.equal(search_str.includes(str_item), true);
 	});
 
 	after(async () => {
