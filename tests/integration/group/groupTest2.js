@@ -21,15 +21,15 @@ describe("Group test 2", () => {
 
 		await sentc.register(username0, pw);
 
-		user0 = await sentc.login(username0, pw);
+		user0 = await sentc.login(username0, pw, true);
 
 		await sentc.register(username1, pw);
 
-		user1 = await sentc.login(username1, pw);
+		user1 = await sentc.login(username1, pw, true);
 
 		await sentc.register(username2, pw);
 
-		user2 = await sentc.login(username2, pw);
+		user2 = await sentc.login(username2, pw, true);
 
 		const group_id = await user0.createGroup();
 

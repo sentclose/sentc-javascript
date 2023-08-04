@@ -26,7 +26,7 @@ describe("User tests", () => {
 	it("should register and login a user", async function() {
 		const user_id = await sentc.register(username, pw);
 
-		user = await sentc.login(username, pw);
+		user = await sentc.login(username, pw, true);
 
 		chai.assert.equal(user_id, user.user_data.user_id);
 	});
@@ -40,7 +40,7 @@ describe("User tests", () => {
 
 	it("should not log in with old pw", async function() {
 		try {
-			await sentc.login(username, pw);
+			await sentc.login(username, pw, true);
 		} catch (e) {
 			chai.assert.notEqual(e, undefined);
 
@@ -51,7 +51,7 @@ describe("User tests", () => {
 	});
 
 	it("should login with the new password", async function() {
-		user = await sentc.login(username, new_pw);
+		user = await sentc.login(username, new_pw, true);
 	});
 
 	it("should reset password", async function() {
@@ -62,7 +62,7 @@ describe("User tests", () => {
 
 	it("should not login with the new password after reset", async function() {
 		try {
-			await sentc.login(username, new_pw);
+			await sentc.login(username, new_pw, true);
 		} catch (e) {
 			chai.assert.notEqual(e, undefined);
 
@@ -73,7 +73,7 @@ describe("User tests", () => {
 	});
 
 	it("should login with the new password after reset", async function() {
-		user = await sentc.login(username, pw);
+		user = await sentc.login(username, pw, true);
 	});
 
 	//device test
@@ -96,11 +96,11 @@ describe("User tests", () => {
 
 	it("should not login with a not fully registered device", async function() {
 		try {
-			await sentc.login(device_identifier, device_pw);
+			await sentc.login(device_identifier, device_pw, true);
 		} catch (e) {
 			const json = JSON.parse(e);
-
-			chai.assert.equal(json.status, "server_112");
+			
+			chai.assert.equal(json.status, "server_100");
 		}
 	});
 
@@ -109,7 +109,7 @@ describe("User tests", () => {
 	});
 
 	it("should login the new device", async function() {
-		new_device = await sentc.login(device_identifier, device_pw);
+		new_device = await sentc.login(device_identifier, device_pw, true);
 	});
 
 	//device key rotation
@@ -138,7 +138,7 @@ describe("User tests", () => {
 		//and now end register
 		await user.registerDevice(device_register_result);
 
-		new_device_1 = await sentc.login(device_identifier_1, device_pw_1);
+		new_device_1 = await sentc.login(device_identifier_1, device_pw_1, true);
 	});
 
 	it("should get the same key id for all devices", function() {
@@ -167,7 +167,7 @@ describe("User tests", () => {
 
 	it("should not log in with deleted device", async function() {
 		try {
-			await sentc.login(device_identifier_1, device_pw_1);
+			await sentc.login(device_identifier_1, device_pw_1, true);
 		} catch (e) {
 			const json = JSON.parse(e);
 
@@ -186,7 +186,7 @@ describe("User tests", () => {
 	it("should create a combined safety number", async function() {
 		//first register new user
 		await sentc.register(username + "1", pw);
-		user_2 = await sentc.login(username + "1", pw);
+		user_2 = await sentc.login(username + "1", pw, true);
 
 		const number = await user.createSafetyNumber({
 			user_id: user_2.user_data.user_id,
@@ -204,7 +204,7 @@ describe("User tests", () => {
 
 	it("should not create the same number with different users", async function() {
 		await sentc.register(username + "2", pw);
-		user_3 = await sentc.login(username + "2", pw);
+		user_3 = await sentc.login(username + "2", pw, true);
 
 		const number = await user.createSafetyNumber({
 			user_id: user_2.user_data.user_id,
