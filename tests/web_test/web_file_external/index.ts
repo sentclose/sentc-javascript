@@ -69,7 +69,7 @@ async function login() {
 		//wasm_path: "http://localhost:8000/tests/web_test/web/dist/sentc_wasm_bg.wasm"
 	});
 
-	user = await Sentc.login(username, pw);
+	user = await Sentc.login(username, pw, true);
 	group = await user.getGroup(groupId);
 
 	console.log("done getting data");

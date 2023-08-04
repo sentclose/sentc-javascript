@@ -151,11 +151,11 @@ async function run()
 
 	console.log("login");
 
-	user = await sentc.login(username, pw);
+	user = await sentc.login(username, pw, true);
 
 	await sentc.register(username_2, pw);
 
-	user_2 = await sentc.login(username_2, pw);
+	user_2 = await sentc.login(username_2, pw, true);
 
 	const group_id = await user.createGroup();
 

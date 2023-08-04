@@ -162,11 +162,11 @@ export async function run()
 
 	console.log("login");
 
-	user = await Sentc.login(username, pw);
+	user = await Sentc.login(username, pw, true);
 
 	await Sentc.register(username_2, pw);
 
-	user_2 = await Sentc.login(username_2, pw);
+	user_2 = await Sentc.login(username_2, pw, true);
 
 	const group_id = await user.createGroup();
 
