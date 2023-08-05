@@ -5,6 +5,7 @@ export {Group} from "./Group";
 export {User} from "./User";
 export * from "./Enities";
 export {FileHelper, Downloader, Uploader} from "./file";
+export * from "./either";
 
 import {Sentc} from "./Sentc";
 

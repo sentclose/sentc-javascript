@@ -29,6 +29,12 @@ export const enum USER_KEY_STORAGE_NAMES
 	sym_key = "sym_key"
 }
 
+export interface UserMfaLogin {
+	deviceIdentifier: string,
+	mfa_master_key: string,
+	mfa_auth_key: string
+}
+
 export interface UserPublicKeyData {
 	public_key: string,
 	public_key_id: string,
@@ -66,12 +72,23 @@ export interface UserData
 	user_keys: UserKeyData[],
 	key_map: Map<string, number>,
 	newest_key_id: string,
+	mfa: boolean,
 
 	jwt: string,
 	refresh_token: string,
 	user_id: string,
 	device_id: string,
 	hmac_keys: string[]	//the decrypted hmac key
+}
+
+export interface OtpRegister {
+	secret: string,
+	alg: string,
+	recover: string[]
+}
+
+export interface OtpRecoveryKeysOutput {
+	keys: string[]
 }
 
 export interface UserDeviceList

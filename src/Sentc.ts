@@ -11,7 +11,7 @@ import init, {
 	group_extract_public_key_data,
 	init_user,
 	InitInput,
-	login,
+	login, mfa_login,
 	prepare_check_user_identifier_available,
 	prepare_register,
 	prepare_register_device_start,
@@ -21,7 +21,7 @@ import init, {
 	user_extract_public_key_data,
 	user_extract_verify_key_data,
 	user_verify_user_public_key,
-	UserData as WasmUserData
+	UserData as WasmUserData, UserLoginOut as WasmUserLoginOut
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
@@ -30,11 +30,12 @@ import {
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData,
+	UserKeyData, UserMfaLogin,
 	UserPublicKeyData
 } from "./Enities";
-import {make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
+import {Either, makeLeft, makeRight} from "./either";
 
 export const enum REFRESH_ENDPOINT {
 	cookie,
@@ -293,7 +294,7 @@ export class Sentc
 		return register_device_start(Sentc.options.base_url, Sentc.options.app_token, device_identifier, password);
 	}
 
-	private static buildUserObj(deviceIdentifier: string, out: WasmUserData)
+	private static buildUserObj(deviceIdentifier: string, out: WasmUserData | WasmUserLoginOut, mfa: boolean)
 	{
 		const device: UserDeviceKeyData = {
 			private_key: out.get_device_private_key(),
@@ -317,6 +318,7 @@ export class Sentc
 			device_id: out.get_device_id(),
 			key_map: new Map(),
 			newest_key_id: "",
+			mfa,
 			hmac_keys: []
 		};
 
@@ -331,12 +333,90 @@ export class Sentc
 	 * For a refresh token flow -> send the refresh token to your server and save it in a http only strict cookie
 	 * Then the user is safe for xss and csrf attacks
 	 *
+	 * when Either UserMfaLogin is returned, then the user must enter the mfa token.
+	 * Use the function Sentc.mfaLogin() to do the totp login or Sentc.mfaRecoveryLogin() to log in with a recover key
 	 */
-	public static async login(deviceIdentifier: string, password: string)
+	public static async login(deviceIdentifier: string, password: string): Promise<Either<User, UserMfaLogin>>;
+
+	/**
+	 * Log in the user.
+	 *
+	 * The same as the other login function but already given the user class back instead of an Either type.
+	 * This is helpful if you disabled mfa for every user and just wants to get the user without an extra check.
+	 *
+	 * This function will throw an exception if the user enables mfa.
+	 */
+	public static async login(deviceIdentifier: string, password: string, force: true): Promise<User>;
+
+	/**
+	 * Log the user in
+	 *
+	 * Store all user data in the storage (e.g. Indexeddb)
+	 *
+	 * For a refresh token flow -> send the refresh token to your server and save it in a http only strict cookie
+	 * Then the user is safe for xss and csrf attacks
+	 *
+	 * when Either UserMfaLogin is returned, then the user must enter the mfa token.
+	 * Use the function Sentc.mfaLogin() to do the totp login or Sentc.mfaRecoveryLogin() to log in with a recover key
+	 */
+	public static async login(deviceIdentifier: string, password: string, force = false)//: Promise<Either<User, UserMfaLogin>>
 	{
 		const out = await login(Sentc.options.base_url, Sentc.options.app_token, deviceIdentifier, password);
 
-		return this.buildUserObj(deviceIdentifier, out);
+		const mfa_master_key = out.get_mfa_master_key();
+		const mfa_auth_key = out.get_mfa_auth_key();
+
+		if (mfa_master_key !== undefined && mfa_auth_key !== undefined) {
+			if (force) {
+				throw create_error("client_10000", "User enabled mfa and this must be handled.");
+			}
+
+			//mfa action needed
+			return makeRight({
+				deviceIdentifier,
+				mfa_auth_key,
+				mfa_master_key
+			});
+		}
+
+		//at this point user disabled mfa
+		const user = await this.buildUserObj(deviceIdentifier, out, false);
+
+		if (force) {
+			return user;
+		}
+
+		return makeLeft(user);
+	}
+
+	public static async mfaLogin(token: string, login_data: UserMfaLogin)
+	{
+		const out = await mfa_login(
+			Sentc.options.base_url,
+			Sentc.options.app_token,
+			login_data.mfa_master_key,
+			login_data.mfa_auth_key,
+			login_data.deviceIdentifier,
+			token,
+			false
+		);
+
+		return this.buildUserObj(login_data.deviceIdentifier, out, true);
+	}
+
+	public static async mfaRecoveryLogin(recovery_token: string, login_data: UserMfaLogin)
+	{
+		const out = await mfa_login(
+			Sentc.options.base_url,
+			Sentc.options.app_token,
+			login_data.mfa_master_key,
+			login_data.mfa_auth_key,
+			login_data.deviceIdentifier,
+			recovery_token,
+			true
+		);
+
+		return this.buildUserObj(login_data.deviceIdentifier, out, true);
 	}
 
 	/**
