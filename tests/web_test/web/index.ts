@@ -1,4 +1,5 @@
-import Sentc, {Group} from "../../../src";
+import Sentc, {Group, User} from "../../../src";
+import {isRight, unwrapEither} from "../../../src/either";
 
 export async function run()
 {
@@ -47,18 +48,26 @@ export async function run()
 
 	console.log("login");
 
-	const user = await Sentc.login(username, pw);
+	const user = await Sentc.login(username, pw, true);
 
 	console.log("login user 2");
 
 	await Sentc.register(username_2, pw);
 
-	const user_2 = await Sentc.login(username_2, pw);
+	const user_2 = await Sentc.login(username_2, pw, true);
 
 	await Sentc.register(username_3, pw);
 
 	//3rd user to test get child group directly and if the keys of the parent are fetched
-	const user_3 = await Sentc.login(username_3, pw);
+
+	let user_3: User;
+	const user_login_3 = await Sentc.login(username_3, pw);
+
+	if (isRight(user_login_3)) {
+		user_3 = await Sentc.mfaLogin("", unwrapEither(user_login_3));
+	} else {
+		user_3 = unwrapEither(user_login_3);
+	}
 
 	console.log("create and get group");
 
@@ -220,7 +229,15 @@ export async function run()
 		await user.registerDevice(result);
 
 		//now try to log in with the new device
-		const new_device = await Sentc.login(device_identifier, device_pw);
+		let new_device: User;
+
+		const new_device_login = await Sentc.login(device_identifier, device_pw);
+
+		if (isRight(new_device_login)) {
+			new_device = await Sentc.mfaLogin("", unwrapEither(new_device_login));
+		} else {
+			new_device = unwrapEither(new_device_login);
+		}
 
 		console.log(new_device);
 
@@ -263,7 +280,7 @@ export async function run()
 		console.log("should not login with a deleted device");
 
 		try {
-			await Sentc.login(device_identifier, device_pw);
+			await Sentc.login(device_identifier, device_pw, true);
 			console.log("logged in with deleted device. Not good!");
 		} catch (e) {
 			console.log("not logged in with deleted device");

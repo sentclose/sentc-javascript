@@ -24,19 +24,19 @@ describe("Group Test", () => {
 
 		await sentc.register(username0, pw);
 
-		user0 = await sentc.login(username0, pw);
+		user0 = await sentc.login(username0, pw, true);
 
 		await sentc.register(username1, pw);
 
-		user1 = await sentc.login(username1, pw);
+		user1 = await sentc.login(username1, pw, true);
 
 		await sentc.register(username2, pw);
 
-		user2 = await sentc.login(username2, pw);
+		user2 = await sentc.login(username2, pw, true);
 
 		await sentc.register(username3, pw);
 
-		user3 = await sentc.login(username3, pw);
+		user3 = await sentc.login(username3, pw, true);
 	});
 
 	it("should create a group", async function() {

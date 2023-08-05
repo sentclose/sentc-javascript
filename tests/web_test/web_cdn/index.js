@@ -41,13 +41,13 @@ async function run() {
 
 	console.log("login");
 
-	const user = await sentc.login(username, pw);
+	const user = await sentc.login(username, pw, true);
 
 	console.log("login user 2");
 
 	await sentc.register(username_2, pw);
 
-	const user_2 = await sentc.login(username_2, pw);
+	const user_2 = await sentc.login(username_2, pw, true);
 
 	console.log("create and get group");
 
@@ -190,7 +190,7 @@ async function run() {
 
 		//now try to log in with the new device
 
-		const new_device = await sentc.login(device_identifier, device_pw);
+		const new_device = await sentc.login(device_identifier, device_pw, true);
 
 		console.log(new_device);
 
@@ -233,7 +233,7 @@ async function run() {
 		console.log("should not login with a deleted device");
 
 		try {
-			await sentc.login(device_identifier, device_pw);
+			await sentc.login(device_identifier, device_pw, true);
 			console.log("logged in with deleted device. Not good!");
 		} catch (e) {
 			console.log("not logged in with deleted device");

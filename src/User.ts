@@ -7,7 +7,7 @@ import {
 	GroupKeyRotationOut,
 	GroupList,
 	GroupOutDataHmacKeys,
-	HttpMethod,
+	HttpMethod, OtpRecoveryKeysOutput, OtpRegister,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceList,
@@ -19,7 +19,8 @@ import {
 	decode_jwt,
 	delete_device,
 	delete_user,
-	done_fetch_user_key, file_prepare_file_name_update,
+	done_fetch_user_key,
+	file_prepare_file_name_update, get_fresh_jwt,
 	group_create_group,
 	group_decrypt_hmac_key,
 	group_prepare_create_group,
@@ -37,7 +38,21 @@ import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
-import {handle_general_server_response, handle_server_response, make_req} from "./core";
+import {create_error, handle_general_server_response, handle_server_response, make_req} from "./core";
+
+async function setUserStorageData(user_data: UserData, deviceIdentifier: string) {
+	const storage = await Sentc.getStore();
+
+	const store_user_data = user_data;
+
+	if (Sentc.options.refresh.endpoint !== REFRESH_ENDPOINT.api) {
+		//if the refresh token should not be stored on the client -> invalidates the stored refresh token
+		//but just return the refresh token with the rest of the user data
+		store_user_data.refresh_token = "";
+	}
+
+	return storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + deviceIdentifier, store_user_data);
+}
 
 export async function getUser(deviceIdentifier: string, user_data: UserData, encrypted_hmac_keys: GroupOutDataHmacKeys[] = [])
 {
@@ -178,6 +193,11 @@ export class User extends AbstractAsymCrypto
 		return Promise.resolve(this.getNewestSignKey());
 	}
 
+	public enabledMfa(): boolean
+	{
+		return this.user_data.mfa;
+	}
+
 	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
 	{
 		const keys = [];
@@ -226,10 +246,8 @@ export class User extends AbstractAsymCrypto
 		if (first) {
 			this.user_data.newest_key_id = user_keys.group_key_id;
 		}
-
-		const storage = await Sentc.getStore();
-
-		return storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier, this.user_data);
+		
+		return setUserStorageData(this.user_data, this.userIdentifier);
 	}
 
 	public async getJwt()
@@ -243,13 +261,16 @@ export class User extends AbstractAsymCrypto
 			//update the user data to safe the updated values, we don't need the class here
 			this.user_data.jwt = await Sentc.refreshJwt(this.user_data.jwt, this.user_data.refresh_token);
 
-			const storage = await Sentc.getStore();
-
 			//save the user data with the new jwt
-			await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier, this.user_data);
+			await setUserStorageData(this.user_data, this.userIdentifier);
 		}
 
 		return this.user_data.jwt;
+	}
+
+	private getFreshJwt(username: string, password: string, mfa_token?: string, mfa_recovery?: boolean)
+	{
+		return get_fresh_jwt(this.base_url, this.app_token, username, password, mfa_token, mfa_recovery);
 	}
 
 	public async updateUser(newIdentifier: string)
@@ -262,6 +283,67 @@ export class User extends AbstractAsymCrypto
 
 		const res = await make_req(HttpMethod.PUT, url, this.app_token, body, jwt);
 		return handle_general_server_response(res);
+	}
+
+	public async registerRawOtp(password: string, mfa_token?: string, mfa_recovery?: boolean): Promise<OtpRegister>
+	{
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+		const url = this.base_url + "/api/v1/user/register_otp";
+
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, fresh_jwt);
+
+		this.user_data.mfa = true;
+
+		await setUserStorageData(this.user_data, this.userIdentifier);
+
+		return handle_server_response(res);
+	}
+
+	public async registerOtp(issuer: string, audience: string, password: string, mfa_token?: string, mfa_recovery?: boolean): Promise<[string, string[]]>
+	{
+		const out = await this.registerRawOtp(password, mfa_token, mfa_recovery);
+
+		return [`otpauth://totp/${issuer}:${audience}?secret=${out.secret}&algorithm=SHA256&issuer=${issuer}`, out.recover];
+	}
+
+	public async getOtpRecoverKeys(password: string, mfa_token?: string, mfa_recovery?: boolean)
+	{
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+		const url = this.base_url + "/api/v1/user/otp_recovery_keys";
+
+		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, fresh_jwt);
+
+		return handle_server_response<OtpRecoveryKeysOutput>(res).keys;
+	}
+
+	public async resetRawOtp(password: string, mfa_token?: string, mfa_recovery?: boolean): Promise<OtpRegister>
+	{
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+		const url = this.base_url + "/api/v1/user/reset_otp";
+
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, fresh_jwt);
+
+		return handle_server_response(res);
+	}
+
+	public async resetOtp(issuer: string, audience: string, password: string, mfa_token?: string, mfa_recovery?: boolean): Promise<[string, string[]]>
+	{
+		const out = await this.resetRawOtp(password, mfa_token, mfa_recovery);
+
+		return [`otpauth://totp/${issuer}:${audience}?secret=${out.secret}&algorithm=SHA256&issuer=${issuer}`, out.recover];
+	}
+
+	public async disableOtp(password: string, mfa_token?: string, mfa_recovery?: boolean)
+	{
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+		const url = this.base_url + "/api/v1/user/disable_otp";
+
+		const res = await make_req(HttpMethod.PATCH, url, this.app_token, undefined, fresh_jwt);
+
+		handle_general_server_response(res);
+
+		this.user_data.mfa = false;
+		return setUserStorageData(this.user_data, this.userIdentifier);
 	}
 
 	public async resetPassword(newPassword: string)
@@ -283,14 +365,20 @@ export class User extends AbstractAsymCrypto
 		);
 	}
 
-	public changePassword(oldPassword:string, newPassword:string)
+	public changePassword(oldPassword:string, newPassword:string, mfa_token?: string, mfa_recovery?: boolean)
 	{
+		if (this.user_data.mfa && !mfa_token) {
+			throw create_error("client_10000", "The user enabled mfa. To change the password, the user must also enter the mfa token");
+		}
+
 		return change_password(
 			this.base_url,
 			this.app_token,
 			this.userIdentifier,
 			oldPassword,
-			newPassword
+			newPassword,
+			mfa_token,
+			mfa_recovery
 		);
 	}
 
@@ -301,21 +389,28 @@ export class User extends AbstractAsymCrypto
 		return storage.delete(USER_KEY_STORAGE_NAMES.userData + "_id_" + this.userIdentifier);
 	}
 
-	public async deleteUser(password: string)
+	public async deleteUser(password: string, mfa_token?: string, mfa_recovery?: boolean)
 	{
-		await delete_user(
-			this.base_url,
-			this.app_token,
-			this.userIdentifier,
-			password
-		);
+		if (this.user_data.mfa && !mfa_token) {
+			throw create_error("client_10000", "The user enabled mfa. To delete the user, the user must also enter the mfa token");
+		}
+
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+
+		await delete_user(this.base_url, this.app_token, fresh_jwt);
 
 		return this.logOut();
 	}
 
-	public async deleteDevice(password: string, device_id: string)
+	public async deleteDevice(password: string, device_id: string, mfa_token?: string, mfa_recovery?: boolean)
 	{
-		await delete_device(this.base_url, this.app_token, this.userIdentifier, password, device_id);
+		if (this.user_data.mfa && !mfa_token) {
+			throw create_error("client_10000", "The user enabled mfa. To delete a device, the user must also enter the mfa token");
+		}
+
+		const fresh_jwt = await this.getFreshJwt(this.userIdentifier, password, mfa_token, mfa_recovery);
+
+		await delete_device(this.base_url, this.app_token, fresh_jwt, device_id);
 
 		if (device_id === this.user_data.device_id) {
 			//only log the device out if it is the actual used device
