@@ -21,7 +21,7 @@ describe("User tests", () => {
 	let sec, recovery_keys;
 
 	it("should register otp", async function() {
-		const out = await user.registerRawOtp();
+		const out = await user.registerRawOtp(pw);
 
 		sec = out.secret;
 		recovery_keys = out.recover;
@@ -54,7 +54,11 @@ describe("User tests", () => {
 	});
 
 	it("should get all recover keys", async function() {
-		const keys = await user.getOtpRecoverKeys();
+		const token = getToken(sec, {
+			algorithm: "SHA-256"
+		});
+
+		const keys = await user.getOtpRecoverKeys(pw, token, false);
 
 		chai.assert.equal(keys.length, 6);
 	});
@@ -72,26 +76,42 @@ describe("User tests", () => {
 	});
 
 	it("should get one recover key less", async function() {
-		const keys = await user.getOtpRecoverKeys();
+		const token = getToken(sec, {
+			algorithm: "SHA-256"
+		});
+
+		const keys = await user.getOtpRecoverKeys(pw, token, false);
 
 		chai.assert.equal(keys.length, 5);
 	});
 
 	it("should reset otp", async function() {
-		const out = await user.resetRawOtp();
+		const token = getToken(sec, {
+			algorithm: "SHA-256"
+		});
+
+		const out = await user.resetRawOtp(pw, token, false);
 
 		sec = out.secret;
 		recovery_keys = out.recover;
 	});
 
 	it("should get all keys back", async function() {
-		const keys = await user.getOtpRecoverKeys();
+		const token = getToken(sec, {
+			algorithm: "SHA-256"
+		});
+
+		const keys = await user.getOtpRecoverKeys(pw, token, false);
 
 		chai.assert.equal(keys.length, 6);
 	});
 
 	it("should disable otp", async function() {
-		await user.disableOtp();
+		const token = getToken(sec, {
+			algorithm: "SHA-256"
+		});
+
+		await user.disableOtp(pw, token, false);
 	});
 
 	it("should login without otp after disabled", async function() {
