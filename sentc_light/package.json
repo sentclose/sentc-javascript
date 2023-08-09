@@ -44,7 +44,7 @@
     "export_cdn": "webpack"
   },
   "dependencies": {
-    "idb": "^6.1.4",
+    "@sentclose/sentc-common": "file:../sentc_common",
     "sentc_wasm_light": "file:../../sentc_wasm_light/pkg"
   }
 }

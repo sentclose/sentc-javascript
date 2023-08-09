@@ -1,20 +1,9 @@
 import {SymKey} from "./crypto/SymKey";
+import {LoginUser as CoreLoginUser} from "@sentclose/sentc-common";
 import {User} from "./User";
 
 type GeneralIdFormat = string;
 export type UserId = GeneralIdFormat;
-
-/**
- * The error representation
- *
- * The Error gets usually thrown as Error(String)
- * where the string is the json version of this interface
- */
-export interface SentcError
-{
-	status: string,
-	error_message: string
-}
 
 export const enum USER_KEY_STORAGE_NAMES
 {
@@ -30,16 +19,7 @@ export const enum USER_KEY_STORAGE_NAMES
 	sym_key = "sym_key"
 }
 
-export type LoginUser =
-	| {kind: "user"; u: User}
-	| {kind: "mfa"; u: UserMfaLogin};
-
-
-export interface UserMfaLogin {
-	deviceIdentifier: string,
-	mfa_master_key: string,
-	mfa_auth_key: string
-}
+export type LoginUser = CoreLoginUser<User>;
 
 export interface UserPublicKeyData {
 	public_key: string,
@@ -87,23 +67,6 @@ export interface UserData
 	hmac_keys: string[]	//the decrypted hmac key
 }
 
-export interface OtpRegister {
-	secret: string,
-	alg: string,
-	recover: string[]
-}
-
-export interface OtpRecoveryKeysOutput {
-	keys: string[]
-}
-
-export interface UserDeviceList
-{
-	device_id: string,
-	time: number,
-	device_identifier: string
-}
-
 export interface GroupKey {
 	private_group_key: string,
 	public_group_key: string,
@@ -148,21 +111,6 @@ export interface GroupData
 	last_check_time: number,
 }
 
-export interface GroupList
-{
-	group_id: string,
-	time: number,
-	joined_time: number,
-	rank: number,
-	parent?: string
-}
-
-export interface GroupInviteListItem
-{
-	group_id: string,
-	time: number
-}
-
 export interface GroupJoinReqListItem
 {
 	user_id: string,
@@ -198,12 +146,6 @@ export interface GroupUserListItem {
 	rank: number,
 	joined_time: number,
 	user_type: number
-}
-
-export interface GroupChildrenListItem {
-	group_id: string,
-	time: number,
-	parent?: string
 }
 
 export interface KeyRotationStartServerOutput {
@@ -301,23 +243,4 @@ export const enum CONTENT_FETCH_LIMIT {
 	medium = "med",
 	large = "large",
 	x_large = "xlarge"
-}
-
-//______________________________________________________________________________________________________________________
-
-export interface ServerOutput<T> {
-	status: boolean,
-	err_msg?: string,
-	err_code?: number,
-	result?: T
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const enum HttpMethod
-{
-	GET = "GET",
-	POST = "POST",
-	PUT = "PUT",
-	PATCH = "PATCH",
-	DELETE = "DELETE",
 }

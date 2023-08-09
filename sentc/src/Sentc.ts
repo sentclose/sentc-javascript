@@ -25,15 +25,15 @@ import init, {
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
-	HttpMethod, LoginUser,
+	LoginUser,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData, UserMfaLogin,
+	UserKeyData,
 	UserPublicKeyData
 } from "./Enities";
-import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface, HttpMethod, UserMfaLogin} from "@sentclose/sentc-common";
 import {getUser, User} from "./User";
 
 export const enum REFRESH_ENDPOINT {

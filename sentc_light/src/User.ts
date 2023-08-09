@@ -3,13 +3,8 @@
  * @since 2023/07/23
  */
 import {
-	GroupInviteListItem,
-	GroupList,
-	HttpMethod, OtpRecoveryKeysOutput,
-	OtpRegister,
 	USER_KEY_STORAGE_NAMES,
-	UserData,
-	UserDeviceList
+	UserData
 } from "./Entities";
 import {
 	change_password,
@@ -19,7 +14,10 @@ import {
 	user_prepare_user_identifier_update
 } from "sentc_wasm_light";
 import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
-import {create_error, handle_general_server_response, handle_server_response, make_req} from "./core";
+import {create_error, handle_general_server_response, handle_server_response, make_req, GroupInviteListItem,
+	GroupList,
+	HttpMethod, OtpRecoveryKeysOutput,
+	OtpRegister, UserDeviceList} from "@sentclose/sentc-common";
 import {getGroup} from "./Group";
 
 export async function getUser(deviceIdentifier: string, user_data: UserData)

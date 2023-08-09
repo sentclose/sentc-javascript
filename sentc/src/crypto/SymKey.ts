@@ -1,4 +1,4 @@
-import {CryptoRawOutput, HttpMethod, USER_KEY_STORAGE_NAMES} from "../Enities";
+import {CryptoRawOutput, USER_KEY_STORAGE_NAMES} from "../Enities";
 import {
 	decrypt_raw_symmetric,
 	decrypt_string_symmetric,
@@ -10,7 +10,7 @@ import {
 	encrypt_symmetric
 } from "sentc_wasm";
 import {Sentc} from "../Sentc";
-import {handle_general_server_response, make_req} from "../core";
+import {handle_general_server_response, make_req, HttpMethod} from "@sentclose/sentc-common";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>

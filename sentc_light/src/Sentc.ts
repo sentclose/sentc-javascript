@@ -16,15 +16,13 @@ import init, {
 	UserDataExport as WasmUserData, mfa_login,
 	UserLoginOut as WasmUserLoginOut
 } from "sentc_wasm_light";
-import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface, HttpMethod, UserMfaLogin} from "@sentclose/sentc-common";
 import {
-	HttpMethod,
 	LoginUser,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
-	UserId,
-	UserMfaLogin
+	UserId
 } from "./Entities";
 
 export const enum REFRESH_ENDPOINT {
