@@ -31,7 +31,7 @@ describe("User tests", () => {
 		//no force here
 		const u = await sentc.login(username, pw);
 
-		const mfa = window.Sentc.isRight(u);
+		const mfa = u.kind === "mfa";
 
 		chai.assert.equal(mfa, true);
 	});
@@ -39,13 +39,13 @@ describe("User tests", () => {
 	it("should login with otp", async function() {
 		const u = await sentc.login(username, pw);
 
-		if (window.Sentc.isRight(u)) {
+		if (u.kind === "mfa") {
 			//mfa login
 			const token = getToken(sec, {
 				algorithm: "SHA-256"
 			});
 
-			const u1 = await sentc.mfaLogin(token, window.Sentc.unwrapEither(u));
+			const u1 = await sentc.mfaLogin(token, u.u);
 
 			chai.assert.equal(u1.user_data.mfa, true);
 		} else {
@@ -66,8 +66,8 @@ describe("User tests", () => {
 	it("should login with otp recover keys", async function() {
 		const u = await sentc.login(username, pw);
 
-		if (window.Sentc.isRight(u)) {
-			const u1 = await sentc.mfaRecoveryLogin(recovery_keys[0], window.Sentc.unwrapEither(u));
+		if (u.kind === "mfa") {
+			const u1 = await sentc.mfaRecoveryLogin(recovery_keys[0], u.u);
 
 			chai.assert.equal(u1.user_data.mfa, true);
 		} else {
