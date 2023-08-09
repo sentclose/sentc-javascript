@@ -18,9 +18,6 @@
       "scripthost"
     ]
   },
-  "include": [
-    "sentc/src/**/*","sentc/tests/**/*"
-  ],
   "exclude": [
     "node_modules"
   ]
