@@ -1,5 +1,9 @@
 {
-  "name": "@sentclose/sentc",
+  "name": "@sentclose/sentc-workspace",
+  "workspaces": [
+    "sentc",
+    "sentc_light"
+  ],
   "version": "0.9.0",
   "description": "End-to-end encryption sdk",
   "repository": {
@@ -38,23 +42,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "prepare": "npm run build && npm run export_cdn",
-    "lint": "eslint . --ext .ts",
-    "export_cdn": "webpack --config webpack/cdn_webpack.config.js",
-    "test_web_module": "webpack --config webpack/web_test_webpack.config.js",
-    "test_web_file_module": "webpack --config webpack/web_file_test_webpack.config.js"
-  },
-  "dependencies": {
-    "idb": "^6.1.4",
-    "sentc_wasm": "0.9.0"
+    "lint": "eslint . --ext .ts"
   },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "1.0.0",
-    "@typescript-eslint/eslint-plugin": "^4.22.1",
-    "@typescript-eslint/parser": "^4.22.1",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
+    "@typescript-eslint/eslint-plugin": "^4.22.1",
+    "@typescript-eslint/parser": "^4.22.1",
     "chai": "^4.2.0",
     "eslint": "^7.32.0",
     "mocha": "^10.0.0",
