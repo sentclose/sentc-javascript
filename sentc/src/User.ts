@@ -3,14 +3,10 @@ import {
 	FileCreateOutput,
 	FileMetaInformation,
 	FilePrepareCreateOutput,
-	GroupInviteListItem,
 	GroupKeyRotationOut,
-	GroupList,
 	GroupOutDataHmacKeys,
-	HttpMethod, OtpRecoveryKeysOutput, OtpRegister,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
-	UserDeviceList,
 	UserKeyData,
 	UserPublicKeyData
 } from "./Enities";
@@ -38,7 +34,14 @@ import {REFRESH_ENDPOINT, Sentc} from "./Sentc";
 import {getGroup, prepareKeys} from "./Group";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
-import {create_error, handle_general_server_response, handle_server_response, make_req} from "./core";
+import {
+	create_error,
+	handle_general_server_response,
+	handle_server_response,
+	make_req,
+	GroupInviteListItem,
+	HttpMethod, OtpRegister, OtpRecoveryKeysOutput, UserDeviceList, GroupList
+} from "@sentclose/sentc-common";
 
 async function setUserStorageData(user_data: UserData, deviceIdentifier: string) {
 	const storage = await Sentc.getStore();

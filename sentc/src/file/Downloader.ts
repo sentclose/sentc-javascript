@@ -3,10 +3,10 @@
  * @since 2022/08/27
  */
 import {Mutex} from "./Mutex";
-import {handle_server_response, make_req, StorageFactory, StorageInterface} from "../core";
+import {handle_server_response, HttpMethod, make_req, StorageFactory, StorageInterface} from "@sentclose/sentc-common";
 import {file_download_and_decrypt_file_part, file_download_and_decrypt_file_part_start} from "sentc_wasm";
 import {User} from "../User";
-import {FileMetaFetched, FileMetaInformation, HttpMethod, PartListItem} from "../Enities";
+import {FileMetaFetched, FileMetaInformation, PartListItem} from "../Enities";
 import {Sentc} from "../Sentc";
 
 export class Downloader

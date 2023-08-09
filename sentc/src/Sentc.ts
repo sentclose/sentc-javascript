@@ -25,15 +25,22 @@ import init, {
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
-	HttpMethod, LoginUser,
+	LoginUser,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
 	UserId,
-	UserKeyData, UserMfaLogin,
+	UserKeyData,
 	UserPublicKeyData
 } from "./Enities";
-import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {
+	create_error,
+	make_req,
+	StorageInterface,
+	HttpMethod,
+	UserMfaLogin,
+	StorageOptions, getStorage
+} from "@sentclose/sentc-common";
 import {getUser, User} from "./User";
 
 export const enum REFRESH_ENDPOINT {
@@ -48,19 +55,12 @@ export interface RefreshOptions {
 	endpoint: REFRESH_ENDPOINT
 }
 
-export interface StorageOptions {
-	errCallBack: ResCallBack,
-}
-
 export interface SentcOptions {
 	base_url?: string,
 	app_token: string,
 	file_part_url?: string,
 	refresh?: RefreshOptions,
-	storage?: {
-		default_storage?: StorageOptions,
-		getStorage?: () => Promise<StorageInterface>
-	},
+	storage?: StorageOptions,
 	wasm_path?: InitInput | Promise<InitInput>
 }
 
@@ -83,26 +83,7 @@ export class Sentc
 			return this.storage;
 		}
 
-		if (this.options?.storage?.getStorage) {
-			this.storage = await this.options.storage.getStorage();
-
-			this.init_storage = true;
-
-			return this.storage;
-		}
-
-		let errCallBack: ResCallBack;
-
-		if (this.options?.storage?.default_storage) {
-			errCallBack = this.options.storage.default_storage.errCallBack;
-		} else {
-			errCallBack = ({err, warn}) => {
-				console.error(err);
-				console.warn(warn);
-			};
-		}
-
-		this.storage = await StorageFactory.getStorage(errCallBack, "sentclose", "keys");
+		this.storage = await getStorage(this.options?.storage);
 
 		this.init_storage = true;
 

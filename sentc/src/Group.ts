@@ -7,22 +7,17 @@ import {
 	FileCreateOutput,
 	FileMetaInformation,
 	FilePrepareCreateOutput,
-	GroupChildrenListItem,
 	GroupData,
 	GroupDataCheckUpdateServerOutput,
-	GroupInviteListItem,
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
-	GroupList,
 	GroupOutDataHmacKeys,
 	GroupOutDataKeys, GroupOutDataSortableKeys,
 	GroupUserListItem,
-	HttpMethod,
 	KeyRotationInput,
 	KeyRotationStartServerOutput,
 	ListContentItem,
-	SentcError,
 	USER_KEY_STORAGE_NAMES,
 	UserKeyData
 } from "./Enities";
@@ -59,7 +54,14 @@ import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";
 import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
-import {create_error, handle_general_server_response, handle_server_response, make_req} from "./core";
+import {
+	create_error,
+	handle_general_server_response,
+	handle_server_response,
+	make_req,
+	HttpMethod,
+	GroupChildrenListItem, SentcError, GroupList, GroupInviteListItem
+} from "@sentclose/sentc-common";
 
 export function prepareKeys(keys: GroupKey[] | UserKeyData[], page = 0): [string, boolean]
 {

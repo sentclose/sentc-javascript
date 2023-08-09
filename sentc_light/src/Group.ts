@@ -1,8 +1,6 @@
 import {
-	GroupChildrenListItem,
 	GroupData,
-	GroupDataCheckUpdateServerOutput, GroupInviteListItem, GroupJoinReqListItem, GroupList, GroupUserListItem,
-	HttpMethod,
+	GroupDataCheckUpdateServerOutput, GroupJoinReqListItem, GroupUserListItem,
 	USER_KEY_STORAGE_NAMES
 } from "./Entities";
 import {
@@ -14,7 +12,14 @@ import {
 } from "sentc_wasm_light";
 import {User} from "./User";
 import {Sentc} from "./Sentc";
-import {create_error, handle_general_server_response, handle_server_response, make_req} from "./core";
+import {
+	create_error,
+	handle_general_server_response,
+	handle_server_response,
+	make_req,
+	HttpMethod,
+	GroupChildrenListItem, GroupList, GroupInviteListItem
+} from "@sentclose/sentc-common";
 
 export async function getGroup(
 	group_id: string,

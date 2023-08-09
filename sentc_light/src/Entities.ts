@@ -1,4 +1,5 @@
 import {User} from "./User";
+import {LoginUser as CoreLoginUser} from "@sentclose/sentc-common";
 
 type GeneralIdFormat = string;
 export type UserId = GeneralIdFormat;
@@ -11,37 +12,8 @@ export const enum USER_KEY_STORAGE_NAMES
 	groupData = "group_data",
 }
 
-export type LoginUser =
-	| {kind: "user"; u: User}
-	| {kind: "mfa"; u: UserMfaLogin};
+export type LoginUser = CoreLoginUser<User>;
 
-export interface UserMfaLogin {
-	deviceIdentifier: string,
-	mfa_master_key: string,
-	mfa_auth_key: string
-}
-
-export interface UserDeviceList
-{
-	device_id: string,
-	time: number,
-	device_identifier: string
-}
-
-export interface GroupInviteListItem
-{
-	group_id: string,
-	time: number
-}
-
-export interface GroupList
-{
-	group_id: string,
-	time: number,
-	joined_time: number,
-	rank: number,
-	parent?: string
-}
 
 export interface UserDeviceKeyData
 {
@@ -64,17 +36,6 @@ export interface UserData
 	mfa: boolean,
 }
 
-export interface OtpRegister {
-	secret: string,
-	alg: string,
-	recover: string[]
-}
-
-export interface OtpRecoveryKeysOutput {
-	keys: string[]
-}
-
-
 export interface GroupData
 {
 	group_id: string,
@@ -87,12 +48,6 @@ export interface GroupData
 	access_by_group_as_member?: string,
 	is_connected_group: boolean,
 	last_check_time: number,
-}
-
-export interface GroupChildrenListItem {
-	group_id: string,
-	time: number,
-	parent?: string
 }
 
 export interface GroupDataCheckUpdateServerOutput
@@ -113,21 +68,3 @@ export interface GroupJoinReqListItem
 	user_type: number
 }
 
-//______________________________________________________________________________________________________________________
-
-export interface ServerOutput<T> {
-	status: boolean,
-	err_msg?: string,
-	err_code?: number,
-	result?: T
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const enum HttpMethod
-{
-	GET = "GET",
-	POST = "POST",
-	PUT = "PUT",
-	PATCH = "PATCH",
-	DELETE = "DELETE",
-}

@@ -1,5 +1,7 @@
-import {HttpMethod, ServerOutput} from "../Enities";
+import {HttpMethod, ServerOutput, StorageOptions} from "./Entities";
+import {ResCallBack, StorageFactory} from "./FileStorage";
 
+export * from "./Entities";
 export * from "./FileStorage";
 
 /**
@@ -27,7 +29,7 @@ export function handle_server_response<T>(res: string)
 		if (!server_output?.err_msg) {
 			throw create_error("client_101", "Cannot create an object from the input string");
 		}
-		
+
 		throw create_error("server_" + server_output.err_code, server_output.err_msg);
 	}
 
@@ -96,4 +98,28 @@ export async function make_req(
 	} catch (e) {
 		throw create_error("client_1002", `Can't decode the response to text: ${e?.message ?? "Request failed"}`);
 	}
+}
+
+export async function getStorage(options?: StorageOptions)
+{
+	if (options?.getStorage) {
+		this.storage = await options.getStorage();
+
+		this.init_storage = true;
+
+		return this.storage;
+	}
+
+	let errCallBack: ResCallBack;
+
+	if (options?.default_storage) {
+		errCallBack = options?.default_storage.errCallBack;
+	} else {
+		errCallBack = ({err, warn}) => {
+			console.error(err);
+			console.warn(warn);
+		};
+	}
+
+	return StorageFactory.getStorage(errCallBack, "sentclose", "keys");
 }
