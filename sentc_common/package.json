@@ -1,0 +1,41 @@
+{
+	"name": "@sentclose/sentc-common",
+	"version": "0.10.0",
+	"description": "End-to-end encryption sdk",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/sentclose/sentc-javascript.git"
+	},
+	"keywords": [
+		"end-to-end-encryption",
+		"sdk",
+		"sentclose",
+		"sentc"
+	],
+	"author": {
+		"name": "Sentclose",
+		"email": "contact@sentclose.com",
+		"url": "https://sentclose.com/"
+	},
+	"collaborators": [
+		{
+			"name": "Jörn Heinemann",
+			"email": "j.heinemann@sentclose.com"
+		}
+	],
+	"license": "AGPL-3.0",
+	"bugs": {
+		"url": "https://github.com/sentclose/sentc-javascript/issues"
+	},
+	"homepage": "https://sentc.com/",
+	"main": "src/index.ts",
+	"files": [
+		"src/",
+		"../LICENSE",
+		"CHANGELOG.md",
+		"README.md"
+	],
+	"dependencies": {
+		"idb": "^6.1.4"
+	}
+}
