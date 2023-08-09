@@ -1,0 +1,52 @@
+{
+  "name": "@sentclose/sentc",
+  "version": "0.9.0",
+  "description": "End-to-end encryption sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentclose/sentc-javascript.git"
+  },
+  "keywords": [
+    "end-to-end-encryption",
+    "sdk",
+    "sentclose",
+    "sentc"
+  ],
+  "author": {
+    "name": "Sentclose",
+    "email": "contact@sentclose.com",
+    "url": "https://sentclose.com/"
+  },
+  "collaborators": [
+    {
+      "name": "Jörn Heinemann",
+      "email": "j.heinemann@sentclose.com"
+    }
+  ],
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/sentclose/sentc-javascript/issues"
+  },
+  "homepage": "https://sentc.com/",
+  "main": "lib/index.js",
+  "browser": "dist/sentc.min.js",
+  "files": [
+    "lib/",
+    "dist/",
+    "../LICENSE",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build && npm run export_cdn",
+    "lint": "eslint . --ext .ts",
+    "export_cdn": "webpack --config webpack/cdn_webpack.config.js",
+    "test_web_module": "webpack --config webpack/web_test_webpack.config.js",
+    "test_web_file_module": "webpack --config webpack/web_file_test_webpack.config.js"
+  },
+  "dependencies": {
+    "idb": "^6.1.4",
+    "sentc_wasm": "file:../../sentc_wasm/pkg"
+  }
+}
