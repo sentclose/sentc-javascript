@@ -4,6 +4,7 @@ node_modules
 /sentc_light/dist
 /sentc/lib
 /sentc_light/lib
+/sentc_common/lib
 
 # Log files
 npm-debug.log*

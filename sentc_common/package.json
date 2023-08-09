@@ -28,13 +28,17 @@
 		"url": "https://github.com/sentclose/sentc-javascript/issues"
 	},
 	"homepage": "https://sentc.com/",
-	"main": "src/index.ts",
+	"main": "lib/index.js",
 	"files": [
-		"src/",
+		"lib/",
 		"../LICENSE",
 		"CHANGELOG.md",
 		"README.md"
 	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepare": "npm run build"
+	},
 	"dependencies": {
 		"idb": "^6.1.4"
 	}
