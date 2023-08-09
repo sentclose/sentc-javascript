@@ -118,7 +118,7 @@ describe("User tests", () => {
 		//no force here
 		const u = await sentc.login(username, pw);
 
-		const mfa = window.Sentc.isLeft(u);
+		const mfa = u.kind === "user";
 
 		chai.assert.equal(mfa, true);
 	});
