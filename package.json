@@ -1,6 +1,7 @@
 {
   "name": "@sentclose/sentc-workspace",
   "workspaces": [
+    "sentc_common",
     "sentc",
     "sentc_light"
   ],
