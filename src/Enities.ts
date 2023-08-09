@@ -1,4 +1,5 @@
 import {SymKey} from "./crypto/SymKey";
+import {User} from "./User";
 
 type GeneralIdFormat = string;
 export type UserId = GeneralIdFormat;
@@ -28,6 +29,11 @@ export const enum USER_KEY_STORAGE_NAMES
 
 	sym_key = "sym_key"
 }
+
+export type LoginUser =
+	| {kind: "user"; u: User}
+	| {kind: "mfa"; u: UserMfaLogin};
+
 
 export interface UserMfaLogin {
 	deviceIdentifier: string,

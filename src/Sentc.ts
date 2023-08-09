@@ -25,7 +25,7 @@ import init, {
 } from "sentc_wasm";
 import {
 	GroupOutDataHmacKeys,
-	HttpMethod,
+	HttpMethod, LoginUser,
 	USER_KEY_STORAGE_NAMES,
 	UserData,
 	UserDeviceKeyData,
@@ -35,7 +35,6 @@ import {
 } from "./Enities";
 import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
-import {LoginUser} from "./util";
 
 export const enum REFRESH_ENDPOINT {
 	cookie,
