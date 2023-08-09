@@ -1,5 +1,4 @@
 import Sentc, {Group, User} from "../../../src";
-import {isRight, unwrapEither} from "../../../src/either";
 
 export async function run()
 {
@@ -63,10 +62,10 @@ export async function run()
 	let user_3: User;
 	const user_login_3 = await Sentc.login(username_3, pw);
 
-	if (isRight(user_login_3)) {
-		user_3 = await Sentc.mfaLogin("", unwrapEither(user_login_3));
+	if (user_login_3.kind === "mfa") {
+		user_3 = await Sentc.mfaLogin("", user_login_3.u);
 	} else {
-		user_3 = unwrapEither(user_login_3);
+		user_3 = user_login_3.u;
 	}
 
 	console.log("create and get group");
@@ -233,10 +232,10 @@ export async function run()
 
 		const new_device_login = await Sentc.login(device_identifier, device_pw);
 
-		if (isRight(new_device_login)) {
-			new_device = await Sentc.mfaLogin("", unwrapEither(new_device_login));
+		if (new_device_login.kind === "mfa") {
+			new_device = await Sentc.mfaLogin("", new_device_login.u);
 		} else {
-			new_device = unwrapEither(new_device_login);
+			new_device = new_device_login.u;
 		}
 
 		console.log(new_device);
