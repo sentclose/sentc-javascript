@@ -1,0 +1,50 @@
+{
+  "name": "@sentclose/sentc-light",
+  "version": "0.10.0",
+  "description": "User and group management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentclose/sentc-javascript-light.git"
+  },
+  "keywords": [
+    "end-to-end-encryption",
+    "sdk",
+    "sentclose",
+    "sentc"
+  ],
+  "author": {
+    "name": "Sentclose",
+    "email": "contact@sentclose.com",
+    "url": "https://sentclose.com/"
+  },
+  "collaborators": [
+    {
+      "name": "Jörn Heinemann",
+      "email": "j.heinemann@sentclose.com"
+    }
+  ],
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/sentclose/sentc-javascript-light/issues"
+  },
+  "homepage": "https://sentc.com/",
+  "main": "lib/index.js",
+  "browser": "dist/sentc-light.min.js",
+  "files": [
+    "lib/",
+    "dist/",
+    "../LICENSE",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build && npm run export_cdn",
+    "lint": "eslint . --ext .ts",
+    "export_cdn": "webpack"
+  },
+  "dependencies": {
+    "idb": "^6.1.4",
+    "sentc_wasm_light": "file:../../sentc_wasm_light/pkg"
+  }
+}

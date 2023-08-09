@@ -1,7 +1,9 @@
 .DS_Store
 node_modules
-/dist
-/lib
+/sentc/dist
+/sentc_light/dist
+/sentc/lib
+/sentc_light/lib
 
 # Log files
 npm-debug.log*
