@@ -35,7 +35,7 @@ import {
 } from "./Enities";
 import {create_error, make_req, ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getUser, User} from "./User";
-import {Either, makeLeft, makeRight} from "./either";
+import {LoginUser} from "./util";
 
 export const enum REFRESH_ENDPOINT {
 	cookie,
@@ -336,7 +336,7 @@ export class Sentc
 	 * when Either UserMfaLogin is returned, then the user must enter the mfa token.
 	 * Use the function Sentc.mfaLogin() to do the totp login or Sentc.mfaRecoveryLogin() to log in with a recover key
 	 */
-	public static async login(deviceIdentifier: string, password: string): Promise<Either<User, UserMfaLogin>>;
+	public static async login(deviceIdentifier: string, password: string): Promise<LoginUser>;
 
 	/**
 	 * Log in the user.
@@ -359,7 +359,7 @@ export class Sentc
 	 * when Either UserMfaLogin is returned, then the user must enter the mfa token.
 	 * Use the function Sentc.mfaLogin() to do the totp login or Sentc.mfaRecoveryLogin() to log in with a recover key
 	 */
-	public static async login(deviceIdentifier: string, password: string, force = false)//: Promise<Either<User, UserMfaLogin>>
+	public static async login(deviceIdentifier: string, password: string, force = false)
 	{
 		const out = await login(Sentc.options.base_url, Sentc.options.app_token, deviceIdentifier, password);
 
@@ -372,11 +372,14 @@ export class Sentc
 			}
 
 			//mfa action needed
-			return makeRight({
-				deviceIdentifier,
-				mfa_auth_key,
-				mfa_master_key
-			});
+			return {
+				kind: "mfa",
+				u: {
+					deviceIdentifier,
+					mfa_auth_key,
+					mfa_master_key
+				}
+			};
 		}
 
 		//at this point user disabled mfa
@@ -386,7 +389,10 @@ export class Sentc
 			return user;
 		}
 
-		return makeLeft(user);
+		return {
+			kind: "user",
+			u: user
+		};
 	}
 
 	public static async mfaLogin(token: string, login_data: UserMfaLogin)
