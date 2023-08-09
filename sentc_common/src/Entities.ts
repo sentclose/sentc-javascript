@@ -1,3 +1,5 @@
+import {ResCallBack, StorageInterface} from "./FileStorage";
+
 /**
  * The error representation
  *
@@ -10,10 +12,15 @@ export interface SentcError
 	error_message: string
 }
 
+export interface StorageOptions
+{
+	default_storage?: { errCallBack: ResCallBack }
+	getStorage?: () => Promise<StorageInterface>
+}
+
 export type LoginUser<T> =
 	| {kind: "user"; u: T}
 	| {kind: "mfa"; u: UserMfaLogin};
-
 
 export interface UserMfaLogin {
 	deviceIdentifier: string,
