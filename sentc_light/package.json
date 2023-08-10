@@ -44,7 +44,7 @@
     "export_cdn": "webpack"
   },
   "dependencies": {
-    "@sentclose/sentc-common": "file:../sentc_common",
-    "sentc_wasm_light": "file:../../sentc_wasm_light/pkg"
+    "@sentclose/sentc-common": "0.10.0",
+    "sentc_wasm_light": "0.10.0"
   }
 }

@@ -46,7 +46,7 @@
     "test_web_file_module": "webpack --config webpack/web_file_test_webpack.config.js"
   },
   "dependencies": {
-    "@sentclose/sentc-common": "file:../sentc_common",
-    "sentc_wasm": "file:../../sentc_wasm/pkg"
+    "@sentclose/sentc-common": "0.10.0",
+    "sentc_wasm": "0.10.0"
   }
 }
