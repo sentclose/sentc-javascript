@@ -16,7 +16,8 @@ import {
 	delete_device,
 	delete_user,
 	done_fetch_user_key,
-	file_prepare_file_name_update, get_fresh_jwt,
+	file_prepare_file_name_update,
+	get_fresh_jwt,
 	group_create_group,
 	group_decrypt_hmac_key,
 	group_prepare_create_group,
@@ -36,11 +37,15 @@ import {Downloader, Uploader} from "./file";
 import {SymKey} from ".";
 import {
 	create_error,
+	GroupInviteListItem,
+	GroupList,
 	handle_general_server_response,
 	handle_server_response,
+	HttpMethod,
 	make_req,
-	GroupInviteListItem,
-	HttpMethod, OtpRegister, OtpRecoveryKeysOutput, UserDeviceList, GroupList
+	OtpRecoveryKeysOutput,
+	OtpRegister,
+	UserDeviceList
 } from "@sentclose/sentc-common";
 
 async function setUserStorageData(user_data: UserData, deviceIdentifier: string) {
@@ -203,7 +208,7 @@ export class User extends AbstractAsymCrypto
 
 	public async decryptHmacKeys(fetchedKeys: GroupOutDataHmacKeys[])
 	{
-		const keys = [];
+		const keys: string[] = [];
 
 		for (let i = 0; i < fetchedKeys.length; i++) {
 			const fetched_key = fetchedKeys[i];
@@ -463,7 +468,7 @@ export class User extends AbstractAsymCrypto
 		return Promise.allSettled(p);
 	}
 
-	public async getDevices(last_fetched_item: UserDeviceList | null = null)
+	public async getDevices(last_fetched_item: UserDeviceList | null = null): Promise<UserDeviceList[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -474,14 +479,12 @@ export class User extends AbstractAsymCrypto
 		const url = this.base_url + "/api/v1/user/device/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
 
-		const out: UserDeviceList[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	public async createSafetyNumber(user_to_compare?: {user_id: string, verify_key_id: string})
 	{
-		let verify_key_2;
+		let verify_key_2: string | undefined;
 
 		if (user_to_compare) {
 			verify_key_2 = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_to_compare.user_id, user_to_compare.verify_key_id);
@@ -556,7 +559,7 @@ export class User extends AbstractAsymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public async getGroups(last_fetched_item: GroupList | null = null)
+	public async getGroups(last_fetched_item: GroupList | null = null): Promise<GroupList[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -566,12 +569,10 @@ export class User extends AbstractAsymCrypto
 		const url = this.base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
 
-		const out: GroupList[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
-	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
+	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null): Promise<GroupInviteListItem[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -581,9 +582,7 @@ export class User extends AbstractAsymCrypto
 		const url = this.base_url + "/api/v1/group/invite/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
 
-		const out: GroupInviteListItem[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	public async acceptGroupInvite(group_id: string)
@@ -614,7 +613,7 @@ export class User extends AbstractAsymCrypto
 		return handle_general_server_response(res);
 	}
 
-	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
+	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null): Promise<GroupInviteListItem[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -624,9 +623,7 @@ export class User extends AbstractAsymCrypto
 		const url = this.base_url + "/api/v1/group/joins/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt);
 
-		const out: GroupInviteListItem[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	public async deleteJoinReq(id: string)
