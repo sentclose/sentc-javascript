@@ -1,4 +1,4 @@
-describe("Sortable tests", () => {
+describe("Searchable tests", () => {
 	const username0 = "test0";
 	const username1 = "test1";
 
