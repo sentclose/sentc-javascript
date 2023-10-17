@@ -100,14 +100,10 @@ export async function make_req(
 	}
 }
 
-export async function getStorage(options?: StorageOptions)
+export function getStorage(options?: StorageOptions)
 {
 	if (options?.getStorage) {
-		this.storage = await options.getStorage();
-
-		this.init_storage = true;
-
-		return this.storage;
+		return options.getStorage();
 	}
 
 	let errCallBack: ResCallBack;
