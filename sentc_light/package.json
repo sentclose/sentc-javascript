@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc-light",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "User and group management",
   "repository": {
     "type": "git",
@@ -44,7 +44,7 @@
     "export_cdn": "webpack"
   },
   "dependencies": {
-    "@sentclose/sentc-common": "0.10.0",
+    "@sentclose/sentc-common": "0.10.1",
     "sentc_wasm_light": "0.11.0"
   }
 }
