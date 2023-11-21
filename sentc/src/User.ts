@@ -151,6 +151,24 @@ export class User extends AbstractAsymCrypto
 		return key;
 	}
 
+	private getUserKeysSync(key_id: string)
+	{
+		const index = this.user_data.key_map.get(key_id);
+
+		if (index === undefined) {
+			throw new Error("Key not found");
+		}
+
+		const key = this.user_data.user_keys[index];
+
+		if (!key) {
+			//key not found
+			throw new Error("Key not found");
+		}
+
+		return key;
+	}
+
 	async getUserSymKey(key_id: string): Promise<string>
 	{
 		const key = await this.getUserKeys(key_id);
@@ -161,6 +179,13 @@ export class User extends AbstractAsymCrypto
 	async getPrivateKey(key_id: string): Promise<string>
 	{
 		const key = await this.getUserKeys(key_id);
+
+		return key.private_key;
+	}
+
+	getPrivateKeySync(key_id: string): string
+	{
+		const key = this.getUserKeysSync(key_id);
 
 		return key.private_key;
 	}
@@ -199,6 +224,11 @@ export class User extends AbstractAsymCrypto
 	getSignKey(): Promise<string>
 	{
 		return Promise.resolve(this.getNewestSignKey());
+	}
+
+	getSignKeySync(): string
+	{
+		return this.getNewestSignKey();
 	}
 
 	public enabledMfa(): boolean

@@ -1173,7 +1173,7 @@ export class Group extends AbstractSymCrypto
 			const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/key/" + key_id;
 			const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-			const fetched_key = await group_extract_group_key(res);
+			const fetched_key = group_extract_group_key(res);
 
 			const key: GroupOutDataKeys = {
 				key_data: fetched_key.get_key_data(),
@@ -1222,6 +1222,23 @@ export class Group extends AbstractSymCrypto
 		return key;
 	}
 
+	private getGroupKeySync(key_id: string)
+	{
+		const key_index = this.data.key_map.get(key_id);
+
+		if (key_index === undefined) {
+			throw new Error("Key not found");
+		}
+
+		const key = this.data.keys[key_index];
+		if (!key) {
+			//key not found
+			throw new Error("Group key not found. Maybe done key rotation will help");
+		}
+
+		return key;
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	getSymKeyToEncrypt(): Promise<[string, string]>
@@ -1231,9 +1248,23 @@ export class Group extends AbstractSymCrypto
 		return Promise.resolve([latest_key.group_key, latest_key.group_key_id]);
 	}
 
+	getSymKeyToEncryptSync(): [string, string]
+	{
+		const latest_key = this.getNewestKey();
+
+		return [latest_key.group_key, latest_key.group_key_id];
+	}
+
 	async getSymKeyById(key_id: string): Promise<string>
 	{
 		const key = await this.getGroupKey(key_id);
+
+		return key.group_key;
+	}
+
+	getSymKeyByIdSync(key_id: string): string
+	{
+		const key = this.getGroupKeySync(key_id);
 
 		return key.group_key;
 	}
@@ -1247,6 +1278,11 @@ export class Group extends AbstractSymCrypto
 	{
 		//always use the users sign key
 		return this.user.getSignKey();
+	}
+
+	getSignKeySync(): string
+	{
+		return this.user.getSignKeySync();
 	}
 
 	getNewestHmacKey(): string
