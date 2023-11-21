@@ -24,9 +24,15 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	 */
 	abstract getSymKeyToEncrypt(): Promise<[string, string]>;
 
+	abstract getSymKeyToEncryptSync(): [string, string];
+
 	abstract getSymKeyById(key_id: string): Promise<string>;
 
+	abstract getSymKeyByIdSync(key_id: string): string;
+
 	abstract getSignKey(): Promise<string>;
+
+	abstract getSignKeySync(): string;
 
 	abstract getJwt(): Promise<string>;
 
@@ -52,6 +58,24 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		};
 	}
 
+	public encryptRawSync(data: Uint8Array, sign = false): CryptoRawOutput
+	{
+		const key = this.getSymKeyToEncryptSync();
+
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
+		}
+
+		const out = encrypt_raw_symmetric(key[0], data, sign_key);
+
+		return {
+			head: out.get_head(),
+			data: out.get_data()
+		};
+	}
+
 	public decryptRaw(head: string, encrypted_data: Uint8Array): Promise<Uint8Array>;
 
 	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
@@ -61,6 +85,15 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const de_head: CryptoHead = deserialize_head_from_string(head);
 
 		const key = await this.getSymKeyById(de_head.id);
+
+		return decrypt_raw_symmetric(key, encrypted_data, head, verify_key);
+	}
+
+	public decryptRawSync(head: string, encrypted_data: Uint8Array, verify_key?: string): Uint8Array
+	{
+		const de_head: CryptoHead = deserialize_head_from_string(head);
+
+		const key = this.getSymKeyByIdSync(de_head.id);
 
 		return decrypt_raw_symmetric(key, encrypted_data, head, verify_key);
 	}
@@ -79,6 +112,19 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 
 		if (sign) {
 			sign_key = await this.getSignKey();
+		}
+
+		return encrypt_symmetric(key[0], data, sign_key);
+	}
+
+	public encryptSync(data: Uint8Array, sign = false): Uint8Array
+	{
+		const key = this.getSymKeyToEncryptSync();
+
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
 		}
 
 		return encrypt_symmetric(key[0], data, sign_key);
@@ -103,6 +149,15 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		return decrypt_symmetric(key, data, verify_key);
 	}
 
+	public decryptSync(data: Uint8Array, verify_key?: string): Uint8Array
+	{
+		const head: CryptoHead = split_head_and_encrypted_data(data);
+
+		const key = this.getSymKeyByIdSync(head.id);
+
+		return decrypt_symmetric(key, data, verify_key);
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	public encryptString(data: string): Promise<string>;
@@ -117,6 +172,19 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 
 		if (sign) {
 			sign_key = await this.getSignKey();
+		}
+
+		return encrypt_string_symmetric(key[0], data, sign_key);
+	}
+
+	public encryptStringSync(data: string, sign = false): string
+	{
+		const key = this.getSymKeyToEncryptSync();
+
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
 		}
 
 		return encrypt_string_symmetric(key[0], data, sign_key);
@@ -137,6 +205,15 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
+
+		return decrypt_string_symmetric(key, data, verify_key);
+	}
+
+	public decryptStringSync(data: string, verify_key?: string): string
+	{
+		const head: CryptoHead = split_head_and_encrypted_string(data);
+
+		const key = this.getSymKeyByIdSync(head.id);
 
 		return decrypt_string_symmetric(key, data, verify_key);
 	}

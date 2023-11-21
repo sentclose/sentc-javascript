@@ -37,7 +37,11 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 	 */
 	abstract getPrivateKey(key_id: string): Promise<string>;
 
+	abstract getPrivateKeySync(key_id: string): string;
+
 	abstract getSignKey(): Promise<string>;
+
+	abstract getSignKeySync(): string;
 
 	abstract getJwt(): Promise<string>;
 
@@ -63,6 +67,22 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		};
 	}
 
+	public encryptRawSync(data: Uint8Array, reply_public_key: string, sign = false): CryptoRawOutput
+	{
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
+		}
+
+		const out = encrypt_raw_asymmetric(reply_public_key, data, sign_key);
+
+		return {
+			head: out.get_head(),
+			data: out.get_data()
+		};
+	}
+
 	public decryptRaw(head: string, encrypted_data: Uint8Array): Promise<Uint8Array>;
 
 	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
@@ -72,6 +92,15 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		const de_head: CryptoHead = deserialize_head_from_string(head);
 
 		const key = await this.getPrivateKey(de_head.id);
+
+		return decrypt_raw_asymmetric(key, encrypted_data, head, verify_key);
+	}
+
+	public decryptRawSync(head: string, encrypted_data: Uint8Array, verify_key?: string)
+	{
+		const de_head: CryptoHead = deserialize_head_from_string(head);
+
+		const key = this.getPrivateKeySync(de_head.id);
 
 		return decrypt_raw_asymmetric(key, encrypted_data, head, verify_key);
 	}
@@ -95,6 +124,17 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		return encrypt_asymmetric(key.public_key, data, sign_key);
 	}
 
+	public encryptSync(data: Uint8Array, reply_public_key: string, sign = false)
+	{
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
+		}
+
+		return encrypt_asymmetric(reply_public_key, data, sign_key);
+	}
+
 	public decrypt(data: Uint8Array): Promise<Uint8Array>;
 
 	public decrypt(data: Uint8Array, verify: boolean, user_id: string): Promise<Uint8Array>;
@@ -109,6 +149,14 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
+
+		return decrypt_asymmetric(key, data, verify_key);
+	}
+
+	public decryptSync(data: Uint8Array, verify_key?: string)
+	{
+		const head: CryptoHead = split_head_and_encrypted_data(data);
+		const key = this.getPrivateKeySync(head.id);
 
 		return decrypt_asymmetric(key, data, verify_key);
 	}
@@ -132,6 +180,17 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		return encrypt_string_asymmetric(key.public_key, data, sign_key);
 	}
 
+	public encryptStringSync(data: string, reply_public_key: string, sign = false)
+	{
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.getSignKeySync();
+		}
+
+		return encrypt_string_asymmetric(reply_public_key, data, sign_key);
+	}
+
 	public decryptString(data: string): Promise<string>;
 
 	public decryptString(data: string, verify: boolean, user_id: string): Promise<string>;
@@ -146,6 +205,14 @@ export abstract class AbstractAsymCrypto extends AbstractCrypto
 		}
 
 		const verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, user_id, head.sign.id);
+
+		return decrypt_string_asymmetric(key, data, verify_key);
+	}
+
+	public decryptStringSync(data: string, verify_key?: string)
+	{
+		const head: CryptoHead = split_head_and_encrypted_string(data);
+		const key = this.getPrivateKeySync(head.id);
 
 		return decrypt_string_asymmetric(key, data, verify_key);
 	}

@@ -102,7 +102,7 @@ export class Sentc
 	{
 		if (this.init_client) {
 			try {
-				return await this.getActualUser(true);
+				return await this.getActualUser();
 			} catch (e) {
 				//user was not logged in but the client was init
 				return; 
