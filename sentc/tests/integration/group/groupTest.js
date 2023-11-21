@@ -153,6 +153,20 @@ describe("Group Test", () => {
 		chai.assert.equal(decrypted, "hello there £ Я a a 👍");
 	});
 
+	it("should test sync encrypt and decrypt and decrypt the string sync without key fetch", () => {
+		//test if it works in general
+		const en = group.encryptStringSync("hello there £ Я a a 👍");
+
+		const de = group.decryptStringSync(en);
+
+		chai.assert.equal(de, "hello there £ Я a a 👍");
+
+		//test with already encrypted data
+		const decrypted = group.decryptStringSync(encrypted_string_by_user_0);
+
+		chai.assert.equal(decrypted, "hello there £ Я a a 👍");
+	});
+
 	//key rotation
 	it("should start the key rotation", async function() {
 		const old_newest_key = group.data.newest_key_id;
