@@ -1,6 +1,6 @@
 {
   "name": "@sentclose/sentc",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "End-to-end encryption sdk",
   "repository": {
     "type": "git",
@@ -47,6 +47,6 @@
   },
   "dependencies": {
     "@sentclose/sentc-common": "0.10.1",
-    "sentc_wasm": "0.11.0"
+    "sentc_wasm": "0.11.1"
   }
 }
