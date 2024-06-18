@@ -4,40 +4,13 @@ import {
 	decrypt_string_symmetric,
 	decrypt_symmetric,
 	done_fetch_sym_key,
-	done_fetch_sym_key_by_private_key, done_fetch_sym_keys,
+	done_fetch_sym_key_by_private_key,
 	encrypt_raw_symmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric
 } from "sentc_wasm";
 import {Sentc} from "../Sentc";
-import {handle_general_server_response, make_req, HttpMethod} from "@sentclose/sentc-common";
-
-/**
- * @author Jörn Heinemann <joernheinemann@gmx.de>
- * @since 2022/08/19
- */
-
-export async function fetchSymKey(base_url:string, app_token: string, key_id: string, master_key: string, master_key_id: string, sign_key: string): Promise<SymKey>
-{
-	const cache_key = USER_KEY_STORAGE_NAMES.sym_key + "_id_" + key_id;
-
-	const storage = await Sentc.getStore();
-	const sym_key_raw: string | undefined = await storage.getItem(cache_key);
-
-	if (sym_key_raw) {
-		return new SymKey(base_url, app_token, sym_key_raw, key_id, master_key_id, sign_key);
-	}
-
-	const res = await make_req(HttpMethod.GET, base_url + "/api/v1/keys/sym_key/" + key_id, app_token);
-
-	const key_out = done_fetch_sym_key(master_key, res, false);
-	
-	const sym_key = new SymKey(base_url, app_token, key_out, key_id, master_key_id, sign_key);
-
-	await storage.set(cache_key, key_out);
-
-	return sym_key;
-}
+import {make_req, HttpMethod} from "@sentclose/sentc-common";
 
 export async function fetchSymKeyByPrivateKey(base_url:string, app_token: string, key_id: string, master_key: string, master_key_id: string, sign_key: string): Promise<SymKey>
 {
@@ -73,20 +46,6 @@ export function getNonRegisteredKeyByPrivateKey(private_key: string, key: string
 	const key_out = done_fetch_sym_key_by_private_key(private_key, key, true);
 
 	return new SymKey("", "", key_out, "non_register", master_key_id, sign_key);
-}
-
-export async function getKeysForMasterKey(base_url:string, app_token: string, master_key_id: string, last_fetched_time: string, last_key_id: string, master_key: string )
-{
-	const url = `${base_url}/api/v1/keys/sym_key/${master_key_id}/${last_fetched_time}/${last_key_id}`;
-
-	const res = await make_req(HttpMethod.GET, url, app_token);
-	const out = done_fetch_sym_keys(master_key, res);
-
-	const keys = out.get_keys();
-	const last_time = out.get_last_fetched_time();
-	const last_id = out.get_last_key_id();
-
-	return [keys, last_time, last_id];
 }
 
 export class SymKey
@@ -181,24 +140,5 @@ export class SymKey
 	public decryptString(data: string, verify_key?: string): string
 	{
 		return decrypt_string_symmetric(this.key, data, verify_key);
-	}
-
-	//__________________________________________________________________________________________________________________
-
-	public async deleteKey(jwt: string)
-	{
-		if (this.key_id === "non_register") {
-			return;
-		}
-
-		const res = await make_req(
-			HttpMethod.DELETE,
-			this.base_url + "/api/v1/keys/sym_key/" + this.key_id,
-			this.app_token,
-			undefined,
-			jwt
-		);
-
-		return handle_general_server_response(res);
 	}
 }

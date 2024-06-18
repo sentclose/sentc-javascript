@@ -223,24 +223,3 @@ export interface FileCreateOutput
 	master_key_id: string,
 	encrypted_file_name: string
 }
-
-//______________________________________________________________________________________________________________________
-
-export interface ListContentItem
-{
-	id: string,
-	item: string,
-	belongs_to_group?: string,
-	belongs_to_user?: string,
-	creator: string,
-	time: number,
-	category?: string,
-	access_from_group?: string,
-}
-
-export const enum CONTENT_FETCH_LIMIT {
-	small = "small",
-	medium = "med",
-	large = "large",
-	x_large = "xlarge"
-}
