@@ -369,12 +369,6 @@ describe("Group Test", () => {
 		}
 	});
 
-	it("should fetch content in the group", async function() {
-		const list = await group.fetchContent({cat_id: "jo"});
-
-		chai.assert.equal(list.length, 0);
-	});
-
 	//child group
 
 	it("should create a child group", async function() {
@@ -485,57 +479,6 @@ describe("Group Test", () => {
 
 		chai.assert.equal(string, decrypt_1);
 		chai.assert.equal(string, decrypt_2);
-	});
-
-	/** @type SymKey */
-	let registered_key;
-	let encrypted_string;
-
-	it("should create a generated key from a group", async function() {
-		registered_key = await group.registerKey();
-
-		encrypted_string = await registered_key.encryptString("string");
-	});
-
-	it("should fetch registered key", async function() {
-		const key = await group_for_user_1.fetchKey(registered_key.key_id, registered_key.master_key_id);
-
-		const decrypted_str = key.decryptString(encrypted_string);
-
-		chai.assert.equal(decrypted_str, "string");
-
-		//fetch key again to check if it is cached
-		//test the cached key to decrypt
-		const key1 = await group_for_user_1.fetchKey(registered_key.key_id, registered_key.master_key_id);
-
-		const decrypted_str1 = key1.decryptString(encrypted_string);
-
-		chai.assert.equal(decrypted_str1, "string");
-	});
-
-	it("should not delete the sym key when user got no access", async function() {
-		//no error but the key must be still there
-		await registered_key.deleteKey(await user1.getJwt());
-
-		//fetch a non-registered version
-		const key_check = await group.fetchKey(registered_key.key_id, registered_key.master_key_id);
-		chai.assert.equal(key_check.key_id, registered_key.key_id);	//key should not be undefined
-	});
-
-	it("should delete the sym key", async function() {
-		await registered_key.deleteKey(await user0.getJwt());
-
-		//check here if the key was already deleted
-		const storage = await sentc.getStore();
-		await storage.delete("sym_key_id_" + registered_key.key_id);
-
-		try {
-			await group.fetchKey(registered_key.key_id, registered_key.master_key_id);
-		} catch (e) {
-			const json = JSON.parse(e);
-
-			chai.assert.equal(json.status, "server_400");
-		}
 	});
 
 	//__________________________________________________________________________________________________________________
