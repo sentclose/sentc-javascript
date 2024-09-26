@@ -176,6 +176,13 @@ describe("Group Test", () => {
 		const new_newest_key = group.data.newest_key_id;
 
 		chai.assert.notEqual(old_newest_key, new_newest_key);
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should get the group public key", async function() {
@@ -393,10 +400,33 @@ describe("Group Test", () => {
 		chai.assert.equal(child_group.data.newest_key_id, group.data.newest_key_id);
 	});
 
-	it("should invite a user to the child group", async function() {
-		//test here also the rank
-		await child_group.inviteAuto(user2.user_data.user_id, 2);
+	it("should invite user manually with prepare to child group", async () => {
+		const invite = await child_group.prepareKeysForNewMember(user2.user_data.user_id, 2);
+		
+		const url = `${sentc.options.base_url}/api/v1/group/${child_group.data.group_id}/invite_auto/${user2.user_data.user_id}`;
 
+		const app_token = sentc.options.app_token;
+		const jwt = await child_group.user.getJwt();
+
+		const res = await fetch(url, {
+			body: invite,
+			method: "PUT",
+			headers: [
+				["Authorization", `Bearer ${jwt}`],
+				["x-sentc-app-token", app_token]
+			]
+		}).then(r => {
+			return r.text();
+		});
+
+		const server_output = JSON.parse(res);
+		const session_res = server_output.result;
+
+		//No session here
+		chai.assert.equal(!session_res["session_id"], true);
+	});
+
+	it("should fetch the child group for the dreict member", async () => {
 		child_group_user_2 = await user2.getGroup(child_group.data.group_id);
 		chai.assert.equal(child_group_user_2.data.rank, 2);
 	});
@@ -448,6 +478,13 @@ describe("Group Test", () => {
 		new_key = child_group.data.newest_key_id;
 
 		chai.assert.notEqual(old_key, new_key);
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should finish the key rotation for the direct member", async function() {
@@ -500,6 +537,13 @@ describe("Group Test", () => {
 
 		//test the key
 		encrypted_string_by_user_0_after_kr = await group.encryptString("hello there £ Я a a 👍 1");
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should finish the key rotation for the 2nd user without verify", async function() {
@@ -539,6 +583,13 @@ describe("Group Test", () => {
 
 		//test the key
 		encrypted_string_by_user_0_after_kr = await group.encryptString("hello there £ Я a a 👍 1");
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should finish the key rotation for the 2nd user with verify", async function() {

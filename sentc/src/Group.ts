@@ -363,6 +363,50 @@ export class Group extends AbstractSymCrypto
 		return group_prepare_keys_for_new_member(public_key, key_string, key_count, rank, this.data.rank);
 	}
 
+	public async handleInviteSessionKeysForNewMember(session_id: string, user_id: string, auto = false, group = false)
+	{
+		if (session_id === "") {
+			return;
+		}
+
+		const jwt = await this.user.getJwt();
+
+		let public_key: string;
+
+		if (group) {
+			const k = await Sentc.getGroupPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.key;
+		} else {
+			const k = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
+			public_key = k.public_key;
+		}
+
+		let next_page = true;
+		let i = 1;
+		const p = [];
+
+		while (next_page) {
+			const next_keys = this.prepareKeys(i);
+			next_page = next_keys[1];
+
+			p.push(group_invite_user_session(
+				this.base_url,
+				this.app_token,
+				jwt,
+				this.data.group_id,
+				auto,
+				session_id,
+				public_key,
+				next_keys[0],
+				this.data.access_by_group_as_member
+			));
+
+			i++;
+		}
+
+		return Promise.allSettled(p);
+	}
+
 	public invite(user_id: string, rank?: number)
 	{
 		return this.inviteUserInternally(user_id, rank);
