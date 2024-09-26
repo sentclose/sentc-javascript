@@ -61,6 +61,13 @@ describe("Group test 2", () => {
 		const new_late_key = connected_group.data.newest_key_id;
 
 		chai.assert.notEqual(old_late_key, new_late_key);
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should not access the connected group directly when user don't got direct access", async function() {
