@@ -426,7 +426,7 @@ describe("Group Test", () => {
 		chai.assert.equal(!session_res["session_id"], true);
 	});
 
-	it("should fetch the child group for the dreict member", async () => {
+	it("should fetch the child group for the direct member", async () => {
 		child_group_user_2 = await user2.getGroup(child_group.data.group_id);
 		chai.assert.equal(child_group_user_2.data.rank, 2);
 	});
