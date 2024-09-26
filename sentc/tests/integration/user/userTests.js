@@ -115,6 +115,13 @@ describe("User tests", () => {
 	//device key rotation
 	it("should start the key rotation", async function() {
 		await user.keyRotation();
+
+		//timeout to wait until the rotation is finished
+		await new Promise(resolve => {
+			setTimeout(() => {
+				resolve();
+			}, 200);
+		});
 	});
 
 	it("should finish the key rotation on the other device", async function() {
