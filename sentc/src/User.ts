@@ -712,10 +712,10 @@ export class User extends AbstractAsymCrypto
 
 	public async prepareRegisterFile(file: File, reply_id = ""): Promise<FilePrepareCreateOutput>
 	{
-		const [key, encrypted_key] = await this.generateNonRegisteredKey(reply_id);
-		
-		reply_id = (reply_id !== "") ? reply_id : this.user_data.user_id;
 		const other_user = (reply_id !== "") ? reply_id : undefined;
+		reply_id = (reply_id !== "") ? reply_id : this.user_data.user_id;
+
+		const [key, encrypted_key] = await this.generateNonRegisteredKey(reply_id);
 
 		const uploader = new Uploader(this.base_url, this.app_token, this, undefined, other_user);
 
@@ -903,8 +903,8 @@ export class User extends AbstractAsymCrypto
 
 	public async createFile(file: File, sign = false, reply_id = "", upload_callback?: (progress?: number) => void)
 	{
-		reply_id = (reply_id !== "") ? reply_id : this.user_data.user_id;
 		const other_user = (reply_id !== "") ? reply_id : undefined;
+		reply_id = (reply_id !== "") ? reply_id : this.user_data.user_id;
 
 		//1st register a new key for this file
 		const [key, encrypted_key] = await this.generateNonRegisteredKey(reply_id);
