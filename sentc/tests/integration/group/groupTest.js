@@ -40,7 +40,7 @@ describe("Group Test", () => {
 	});
 
 	it("should create a group", async function() {
-		const group_id = await user0.createGroup();
+		const group_id = await user0.createGroup(true);
 
 		group = await user0.getGroup(group_id);
 
@@ -56,7 +56,7 @@ describe("Group Test", () => {
 
 	it("should not get the group when user is not in the group", async function() {
 		try {
-			await user1.getGroup(group.data.group_id);
+			await user1.getGroup(group.data.group_id, undefined, 2);
 		} catch (e) {
 			const error = JSON.parse(e);
 
@@ -107,7 +107,7 @@ describe("Group Test", () => {
 
 		chai.assert.equal(out.length, 1);
 
-		group_for_user_1 = await user1.getGroup(out[0].group_id);
+		group_for_user_1 = await user1.getGroup(out[0].group_id, undefined, 2);
 
 		chai.assert.equal(group_for_user_1.data.group_id, group.data.group_id);
 	});
@@ -596,7 +596,7 @@ describe("Group Test", () => {
 		//this should work even if the user don't want to verify the key
 		const old_newest_key = group_for_user_1.data.newest_key_id;
 
-		await group_for_user_1.finishKeyRotation(true);
+		await group_for_user_1.finishKeyRotation(2);
 
 		const new_newest_key = group_for_user_1.data.newest_key_id;
 
