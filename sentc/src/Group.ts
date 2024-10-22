@@ -97,6 +97,7 @@ export async function getGroup(
 	user: User,
 	parent = false,
 	group_as_member?: string,
+	verify = 0,
 	rek = false
 ) {
 	const storage = await Sentc.getStore();
@@ -152,7 +153,7 @@ export async function getGroup(
 		if (!rek) {
 			//if group as member set. load this group first to get the keys
 			//no group as member flag
-			await getGroup(access_by_group_as_member, base_url, app_token, user);
+			await getGroup(access_by_group_as_member, base_url, app_token, user, false, undefined, verify);
 		}
 	}
 
@@ -161,7 +162,7 @@ export async function getGroup(
 		//check if the parent group is fetched
 		//rec here because the user might be in a parent of the parent group or so
 		//check the tree until we found the group where the user access by user
-		await getGroup(parent_group_id, base_url, app_token, user, false, group_as_member, true);
+		await getGroup(parent_group_id, base_url, app_token, user, false, group_as_member, verify, true);
 	}
 
 	let group_data: GroupData = {
@@ -188,7 +189,7 @@ export async function getGroup(
 	//update the group obj and the group data (which we saved in store) with the decrypted keys.
 	//it is ok to use the private key with an empty array,
 	// because we are using the keys of the parent group when this is a child group
-	const keys = await group_obj.decryptKey(fetched_keys);
+	const keys = await group_obj.decryptKey(fetched_keys, verify);
 	group_data.keys = keys;
 	group_obj.groupKeys = keys;
 
@@ -208,7 +209,7 @@ export async function getGroup(
 
 	if (keys.length >= 50) {
 		//fetch the rest of the keys via pagination, get the updated data back
-		group_data = await group_obj.fetchKeys(jwt);
+		group_data = await group_obj.fetchKeys(jwt, verify);
 	}
 
 	//now decrypt the hmac key for searchable encryption, the right key must be fetched before
@@ -252,18 +253,18 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public getChildGroup(group_id: string)
+	public getChildGroup(group_id: string, verify = 0)
 	{
-		return getGroup(group_id, this.base_url, this.app_token, this.user, true, this.data.access_by_group_as_member);
+		return getGroup(group_id, this.base_url, this.app_token, this.user, true, this.data.access_by_group_as_member, verify);
 	}
 
-	public getConnectedGroup(group_id: string)
+	public getConnectedGroup(group_id: string, verify = 0)
 	{
 		//access the connected group from this group
-		return getGroup(group_id, this.base_url, this.app_token, this.user, false, this.data.group_id);
+		return getGroup(group_id, this.base_url, this.app_token, this.user, false, this.data.group_id, verify);
 	}
 
-	public async getChildren(last_fetched_item: GroupChildrenListItem | null = null)
+	public async getChildren(last_fetched_item: GroupChildrenListItem | null = null): Promise<GroupChildrenListItem[]>
 	{
 		const jwt = await this.user.getJwt();
 
@@ -273,36 +274,76 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/children/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const list: GroupChildrenListItem[] = handle_server_response(res);
-
-		return list;
+		return handle_server_response(res);
 	}
 
-	public prepareCreateChildGroup()
+	public prepareCreateChildGroup(sign = false)
 	{
 		const latest_key = this.getNewestKey();
 
-		const group_input = group_prepare_create_group(latest_key.public_group_key);
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.user.getNewestSignKey();
+		}
+
+		const group_input = group_prepare_create_group(
+			latest_key.public_group_key,
+			sign_key,
+			this.user.user_data.user_id
+		);
 
 		return [group_input, latest_key.group_key_id];
 	}
 
-	public async createChildGroup()
+	public async createChildGroup(sign = false)
 	{
 		const latest_key = this.getNewestKey().public_group_key;
 
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.user.getNewestSignKey();
+		}
+
 		const jwt = await this.user.getJwt();
 
-		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank, this.data.access_by_group_as_member);
+		return group_create_child_group(
+			this.base_url,
+			this.app_token,
+			jwt,
+			latest_key,
+			this.data.group_id,
+			this.data.rank,
+			this.data.access_by_group_as_member,
+			sign_key,
+			this.user.user_data.user_id
+		);
 	}
 
-	public async createConnectedGroup()
+	public async createConnectedGroup(sign = false)
 	{
 		const latest_key = this.getNewestKey().public_group_key;
 
+		let sign_key: string | undefined;
+
+		if (sign) {
+			sign_key = this.user.getNewestSignKey();
+		}
+
 		const jwt = await this.user.getJwt();
 
-		return group_create_connected_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank, latest_key, this.data.access_by_group_as_member);
+		return group_create_connected_group(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			this.data.rank,
+			latest_key,
+			this.data.access_by_group_as_member,
+			sign_key,
+			this.user.user_data.user_id
+		);
 	}
 
 	public async groupUpdateCheck()
@@ -316,7 +357,7 @@ export class Group extends AbstractSymCrypto
 		this.data.last_check_time = Date.now();
 	}
 
-	public async getMember(last_fetched_item: GroupUserListItem | null = null)
+	public async getMember(last_fetched_item: GroupUserListItem | null = null): Promise<GroupUserListItem[]>
 	{
 		const jwt = await this.user.getJwt();
 
@@ -326,9 +367,7 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/member/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const list: GroupUserListItem[] = handle_server_response(res);
-
-		return list;
+		return handle_server_response(res);
 	}
 
 	public async stopInvites()
@@ -505,7 +544,7 @@ export class Group extends AbstractSymCrypto
 	//__________________________________________________________________________________________________________________
 	//join req
 
-	public async getJoinRequests(last_fetched_item: GroupJoinReqListItem | null = null)
+	public async getJoinRequests(last_fetched_item: GroupJoinReqListItem | null = null): Promise<GroupJoinReqListItem[]>
 	{
 		if (this.data.rank > 2) {
 			throw create_error("client_201", "No permission to fulfill this action");
@@ -519,9 +558,7 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/join_req/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const reqs: GroupJoinReqListItem[] = handle_server_response(res);
-
-		return reqs;
+		return handle_server_response(res);
 	}
 
 	public async rejectJoinRequest(user_id: string)
@@ -809,7 +846,7 @@ export class Group extends AbstractSymCrypto
 		return this.getGroupKey(key_id, true);
 	}
 
-	public async finishKeyRotation(verify = false)
+	public async finishKeyRotation(verify = 0)
 	{
 		const jwt = await this.user.getJwt();
 
@@ -842,7 +879,7 @@ export class Group extends AbstractSymCrypto
 
 				try {
 					// eslint-disable-next-line no-await-in-loop
-					pre_key = await this.getGroupKey(key.pre_group_key_id);
+					pre_key = await this.getGroupKey(key.pre_group_key_id, false, verify);
 					// eslint-disable-next-line no-empty
 				} catch (e) {
 					//key not found -> try the next round
@@ -857,22 +894,6 @@ export class Group extends AbstractSymCrypto
 				// eslint-disable-next-line no-await-in-loop
 				const private_key = await this.getPrivateKey(key.encrypted_eph_key_key_id);
 
-				//get the verify key of the starter if it was set and verify is true
-				let verify_key: string | undefined;
-
-				if (verify && !!key.signed_by_user_id && !!key.signed_by_user_sign_key_id) {
-					try {
-						// eslint-disable-next-line no-await-in-loop
-						verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, key.signed_by_user_id, key.signed_by_user_sign_key_id);
-					} catch (e) {
-						//check if code === 100 -> user not found. if so ignore this error and use no verify key
-						const err: SentcError = JSON.parse(e);
-						if (err.status !== "server_100") {
-							throw e;
-						}
-					}
-				}
-
 				//await must be in this loop because we need the keys
 				// eslint-disable-next-line no-await-in-loop
 				await group_finish_key_rotation(
@@ -884,13 +905,12 @@ export class Group extends AbstractSymCrypto
 					pre_key.group_key,
 					public_key,
 					private_key,
-					verify_key,
 					this.data.access_by_group_as_member
 				);
 				
 				//now get the new key and safe it
 				// eslint-disable-next-line no-await-in-loop
-				await this.getGroupKey(key.new_group_key_id, true);
+				await this.getGroupKey(key.new_group_key_id, true, verify);
 			}
 
 			//when it runs 10 times and there are still left -> break up
@@ -975,7 +995,7 @@ export class Group extends AbstractSymCrypto
 	//__________________________________________________________________________________________________________________
 	//group as member
 
-	public async getGroups(last_fetched_item: GroupList | null = null)
+	public async getGroups(last_fetched_item: GroupList | null = null): Promise<GroupList[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -985,13 +1005,11 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/all/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const out: GroupList[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	//join req to another group to connect
-	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
+	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null): Promise<GroupInviteListItem[]>
 	{
 		const jwt = await this.getJwt();
 
@@ -1001,9 +1019,7 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/invite/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const out: GroupInviteListItem[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	public async acceptGroupInvite(group_id: string)
@@ -1040,7 +1056,7 @@ export class Group extends AbstractSymCrypto
 		return handle_general_server_response(res);
 	}
 
-	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null)
+	public async sentJoinReq(last_fetched_item: GroupInviteListItem | null = null): Promise<GroupInviteListItem[]>
 	{
 		if (this.data.rank > 1) {
 			throw create_error("client_201", "No permission to fulfill this action");
@@ -1054,9 +1070,7 @@ export class Group extends AbstractSymCrypto
 		const url = this.base_url + "/api/v1/group/" + this.data.group_id + "/joins/" + last_fetched_time + "/" + last_id;
 		const res = await make_req(HttpMethod.GET, url, this.app_token, undefined, jwt, this.data.access_by_group_as_member);
 
-		const out: GroupInviteListItem[] = handle_server_response(res);
-
-		return out;
+		return handle_server_response(res);
 	}
 
 	public async deleteJoinReq(id: string)
@@ -1093,7 +1107,7 @@ export class Group extends AbstractSymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public async fetchKeys(jwt: string)
+	public async fetchKeys(jwt: string, verify = 0)
 	{
 		let last_item = this.data.keys[this.data.keys.length - 1];
 
@@ -1110,7 +1124,7 @@ export class Group extends AbstractSymCrypto
 			const fetchedKeys: GroupOutDataKeys[] = group_extract_group_keys(res);
 
 			// eslint-disable-next-line no-await-in-loop
-			const decrypted_key = await this.decryptKey(fetchedKeys);
+			const decrypted_key = await this.decryptKey(fetchedKeys, verify);
 
 			keys.push(...decrypted_key);
 
@@ -1138,8 +1152,9 @@ export class Group extends AbstractSymCrypto
 	 * get the right private key for each key
 	 *
 	 * @param fetchedKeys
+	 * @param verify
 	 */
-	public async decryptKey(fetchedKeys: GroupOutDataKeys[]): Promise<GroupKey[]>
+	public async decryptKey(fetchedKeys: GroupOutDataKeys[], verify = 0): Promise<GroupKey[]>
 	{
 		const keys: GroupKey[] = [];
 
@@ -1149,7 +1164,25 @@ export class Group extends AbstractSymCrypto
 			// eslint-disable-next-line no-await-in-loop
 			const private_key = await this.getPrivateKey(fetched_key.private_key_id);
 
-			const decrypted_keys = group_decrypt_key(private_key, fetched_key.key_data);
+			let verify_key: string | undefined;
+			
+			if (verify > 0 && fetched_key.signed_by_user_id && fetched_key.signed_by_user_sign_key_id) {
+				try {
+					// eslint-disable-next-line no-await-in-loop
+					verify_key = await Sentc.getUserVerifyKeyData(this.base_url, this.app_token, fetched_key.signed_by_user_id, fetched_key.signed_by_user_sign_key_id);
+				} catch (e) {
+					//for verify = 1 ignore error and just decrypt the key
+					if (verify === 2) {
+						//check if code === 100 -> user not found. if so ignore this error and use no verify key
+						const err: SentcError = JSON.parse(e);
+						if (err.status !== "server_100") {
+							throw e;
+						}
+					}
+				}
+			}
+			
+			const decrypted_keys = group_decrypt_key(private_key, fetched_key.key_data, verify_key);
 
 			keys.push({
 				group_key_id: decrypted_keys.get_group_key_id(),
@@ -1205,7 +1238,7 @@ export class Group extends AbstractSymCrypto
 		return prepareKeys(this.data.keys, page);
 	}
 
-	private async getGroupKey(key_id: string, new_keys = false)
+	private async getGroupKey(key_id: string, new_keys = false, verify = 0)
 	{
 		let key_index = this.data.key_map.get(key_id);
 
@@ -1219,10 +1252,12 @@ export class Group extends AbstractSymCrypto
 
 			const key: GroupOutDataKeys = {
 				key_data: fetched_key.get_key_data(),
-				private_key_id: fetched_key.get_private_key_id()
+				private_key_id: fetched_key.get_private_key_id(),
+				signed_by_user_id: fetched_key.get_signed_by_user_id(),
+				signed_by_user_sign_key_id: fetched_key.get_signed_by_user_sign_key_id()
 			};
 
-			const decrypted_key = await this.decryptKey([key]);
+			const decrypted_key = await this.decryptKey([key], verify);
 
 			const last_inserted_key_index = this.data.keys.length;
 			this.data.keys.push(decrypted_key[0]);
