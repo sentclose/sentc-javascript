@@ -667,22 +667,42 @@ export class User extends AbstractAsymCrypto
 
 	//__________________________________________________________________________________________________________________
 
-	public prepareGroupCreate()
+	public prepareGroupCreate(sign = false)
 	{
+		let sign_key: string;
+
+		if (sign) {
+			sign_key = this.getNewestSignKey();
+		}
+		
 		//important use the public key not the exported public key here!
-		return group_prepare_create_group(this.getNewestPublicKey());
+		return group_prepare_create_group(this.getNewestPublicKey(), sign_key, this.user_data.user_id);
 	}
 
-	public async createGroup()
+	public async createGroup(sign = false)
 	{
 		const jwt = await this.getJwt();
 
-		return group_create_group(this.base_url, this.app_token, jwt, this.getNewestPublicKey());
+		let sign_key: string;
+
+		if (sign) {
+			sign_key = this.getNewestSignKey();
+		}
+
+		return group_create_group(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.getNewestPublicKey(),
+			undefined,
+			sign_key,
+			this.user_data.user_id
+		);
 	}
 
-	public getGroup(group_id: string, group_as_member?: string)
+	public getGroup(group_id: string, group_as_member?: string, verify = 0)
 	{
-		return getGroup(group_id, this.base_url, this.app_token, this, false, group_as_member);
+		return getGroup(group_id, this.base_url, this.app_token, this, false, group_as_member, verify);
 	}
 
 	//__________________________________________________________________________________________________________________
