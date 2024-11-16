@@ -103,7 +103,8 @@ export class Sentc
 			base_url,
 			app_token: options?.app_token,
 			refresh,
-			file_part_url: options?.file_part_url
+			file_part_url: options?.file_part_url,
+			storage: options?.storage
 		};
 
 		try {
