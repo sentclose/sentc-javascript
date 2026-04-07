@@ -341,6 +341,10 @@ describe("Group Test", () => {
 		}
 	});
 
+	it("should re invite the user", async function() {
+		await group.reInviteUser(user1.user_data.user_id);
+	});
+
 	it("should increase the rank for user 1", async function() {
 		await group.updateRank(user1.user_data.user_id, 1);
 
@@ -350,6 +354,10 @@ describe("Group Test", () => {
 		await group.updateRank(user2.user_data.user_id, 2);
 
 		await group_for_user_2.groupUpdateCheck();
+	});
+
+	it("should re invite the creator", async function() {
+		await group_for_user_2.reInviteUser(user0.user_data.user_id);
 	});
 
 	it("should not kick a user with higher rank", async function() {
@@ -431,7 +439,7 @@ describe("Group Test", () => {
 		chai.assert.equal(child_group_user_2.data.rank, 2);
 	});
 
-	it("should re invite the user", async function() {
+	it("should re invite the user in child group", async function() {
 		await child_group.reInviteUser(user2.user_data.user_id);
 	});
 
